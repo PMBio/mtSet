@@ -20,7 +20,6 @@ from pycore.utils.utils import smartDumpDictHdf5
 
 import scipy as SP
 import h5py
-import ipdb
 import pylab as PL
 import copy
 import os
@@ -60,8 +59,6 @@ if __name__ == "__main__":
     geno_pos    = f['geno_pos'][:]    # genotype positions (V-vector)
     geno_chrom  = f['geno_chrom'][:]  # genotype choromosomes (V-vector)
     covariates  = f['covariates'][:]  # covariate matrix (NxK)
-
-    ipdb.set_trace()
 
     # here we consider no covariates for mtSet and stSet
     # while we consider 6 covariates for mtSet1VC
