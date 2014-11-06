@@ -19,4 +19,4 @@ A demo that shows how to use mtSet can is at https://github.com/PMBio/mtSet/blob
 Extensive documentation will be available soon.
 
 ## License
-See [LICENSE] https://github.com/PMBio/mtSet/blob/master/license.txt
+See [LICENSE] https://github.com/PMBio/mtSet/blob/master/LICENSE
