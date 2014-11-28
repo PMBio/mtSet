@@ -1,5 +1,5 @@
 #!/bin/bash 
-BFILE=./../data/1000G_chr22/chrom22
+BFILE=./../data/1000G_chr22/chrom22 #specify here bed basename
 CFILE=./out/chrom22
 PFILE=./out/pheno
 WFILE=./out/windows
