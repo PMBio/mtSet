@@ -54,12 +54,12 @@ class Chi2mixture(object):
         """
         self.mixture = 1-(lrt<=self.tol).mean()
         n_false      = SP.sum(lrt>self.tol)
-        
+
         """
         step 2: only use the largest qmax fraction of test statistics to estimate the
                 remaining parameters
         """
-        n_fitting   = self.qmax * n_false
+        n_fitting   = SP.ceil(self.qmax * n_false)
         lrt_sorted  = -SP.sort(-lrt)[:n_fitting]
         q           = SP.linspace(0, 1,n_false)[1:n_fitting+1]
         log_q       = SP.log10(q)
@@ -71,6 +71,7 @@ class Chi2mixture(object):
         MSE_opt = SP.inf
         MSE     = SP.zeros((self.n_intervals,self.n_intervals))
 
+        
         for i,scale in enumerate(SP.linspace(self.scale_min,self.scale_max,self.n_intervals)):
             for j,dof in enumerate(SP.linspace(self.dof_min,self.dof_max,self.n_intervals)):
                 p     = STATS.chi2.sf(lrt_sorted/scale,dof)

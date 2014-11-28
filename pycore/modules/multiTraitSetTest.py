@@ -3,7 +3,7 @@ sys.path.append('./..')
 import pdb
 from pycore.utils.utils import dumpDictHdf5
 from pycore.utils.utils import smartDumpDictHdf5
-from pycore.modules import VarianceDecompositionPyGP
+from pycore.modules.varianceDecompositionPyGP import VarianceDecompositionPyGP
 
 # core
 from pycore.gp import gp3kronSum
