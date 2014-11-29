@@ -14,7 +14,7 @@ mtSet requires LIMIX (https://pypi.python.org/pypi/limix)
 
 ## How to use mtSet?
 
-A demo that shows how to use mtSet can is at https://github.com/PMBio/mtSet/blob/master/demos/arab_demos.py
+After cloning the repository, mtSet can be run from the command line using the scripts in bin as shown in the tutorial. A demo on how to use mtSet in python can be found in demos.
 
 Extensive documentation will be available soon.
 
