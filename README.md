@@ -14,9 +14,8 @@ mtSet requires LIMIX (https://pypi.python.org/pypi/limix)
 
 ## How to use mtSet?
 
-After cloning the repository, mtSet can be run from the command line using the scripts in bin as shown in the tutorial. A demo on how to use mtSet in python can be found in demos.
-
-Extensive documentation will be available soon.
+After cloning the repository, mtSet can be run from the command line or in python.
+More info can be found in the wiki (https://github.com/PMBio/mtSet/wiki).
 
 ## License
 See [LICENSE] https://github.com/PMBio/mtSet/blob/master/LICENSE
