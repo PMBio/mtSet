@@ -14,10 +14,7 @@ from mtSet.pycore.utils.read_utils import readNullModelFile
 from mtSet.pycore.utils.read_utils import readWindowsFile
 from mtSet.pycore.utils.read_utils import readCovarianceMatrixFile
 from mtSet.pycore.utils.read_utils import readPhenoFile
-
-# fastLMM
-sys.path.append('./../plink')
-import mtSet.plink.plink_reader
+from mtSet.plink import plink_reader
  
 def scan(bfile,Y,K,params0,wnds,minSnps,i0,i1,perm_i,outfile):
 
