@@ -30,5 +30,9 @@ mtSet can be run from the command line using the scripts in _mtSet_/_bin_ in a p
 
 mtSet can be also installed by using the _setup.py_ file.
 
+## How to use mtSet
+
+Please find instructions and examples in the [tutorial](https://github.com/PMBio/mtSet/wiki/Tutorial).
+
 ## License
 See [LICENSE] https://github.com/PMBio/mtSet/blob/master/LICENSE
