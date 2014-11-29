@@ -66,7 +66,7 @@ if __name__ == '__main__':
     setup(
         name = 'mtSet',
         version = '0.1',
-        author = 'Paolo Casale, Barbara Rakitsch, Oliver Stegle',
+        author = 'Francesco Paolo Casale, Barbara Rakitsch, Oliver Stegle',
         author_email = "casale@ebi.ac.u, rakitsch@ebi.ac.uk, stegle@ebi.ac.uk",
         description = ('Efficient linear mixd model set tests'),
         url = "https://github.com/PMBio/mtSet",
