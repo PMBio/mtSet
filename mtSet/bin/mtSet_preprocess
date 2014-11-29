@@ -3,7 +3,10 @@
 # All rights reserved.
 
 import sys
-sys.path.append('./../..')
+import os
+path_abs = os.path.dirname(os.path.abspath(sys.argv[0]))
+path_mtSet = os.path.join(path_abs,'../..')
+sys.path.append(path_mtSet)
 from mtSet.pycore.utils.preprocessCore import preprocess
 from optparse import OptionParser
 

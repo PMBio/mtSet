@@ -3,13 +3,10 @@
 # All rights reserved.
 
 import sys
-import pdb
 import os
-#reconstruct absolute path to add mtSet to path
 path_abs = os.path.dirname(os.path.abspath(sys.argv[0]))
 path_mtSet = os.path.join(path_abs,'../..')
 sys.path.append(path_mtSet)
-#sys.path.append('./../..')
 from mtSet.pycore.utils.analyzeCore import analyze
 from optparse import OptionParser
 
