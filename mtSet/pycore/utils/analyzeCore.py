@@ -17,7 +17,7 @@ from mtSet.pycore.utils.read_utils import readPhenoFile
 
 # fastLMM
 sys.path.append('./../plink')
-import plink_reader
+import mtSet.plink.plink_reader
  
 def scan(bfile,Y,K,params0,wnds,minSnps,i0,i1,perm_i,outfile):
 
