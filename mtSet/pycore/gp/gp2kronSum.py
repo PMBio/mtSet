@@ -7,7 +7,6 @@ import pdb
 import numpy as NP
 import scipy as SP
 import scipy.linalg as LA
-import limix
 import time as TIME
 from gp_base import GP
 
