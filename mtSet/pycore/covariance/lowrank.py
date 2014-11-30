@@ -1,62 +1,54 @@
 import scipy as SP
-import pdb
-from covar_base import CovarianceFunction
-from linear import LinearCF
-from diag import DiagIsoCF,DiagArdCF
+from covariance import covariance
 
-class LowRankCF(CovarianceFunction):
-    def __init__(self,n_dimensions):
-        self.n_dimensions = n_dimensions
-        self.n_hyperparameters = 2
-        self.covar_lin = LinearCF(n_dimensions)
-        self.covar_iso = DiagIsoCF(n_dimensions)
+class lowrank(covariance):
+    """
+    lowrank covariance
+    """
+    def __init__(self,P,rank=1):
+        """
+        initialization
+        """
+        self.rank = rank
+        covariance.__init__(self,P)
         
-    def K(self,theta,X,X2=None):
-        _theta = SP.array([theta[0]])
-        Klin = self.covar_lin.K(_theta,X,X2,hack=False)
-        _theta = SP.array([theta[1]])
-        Kiso = self.covar_iso.K(_theta,X,X2)
-        return Klin + Kiso
+    def K(self):
+        """
+        evaluates the kernel for given hyperparameters theta
+        """
+        X = self._getX()
+        RV = SP.dot(X,X.T)
+        return RV
+     
+    def Kgrad_param(self,i):
+        """
+        partial derivative with repspect to the i-th hyperparamter theta[i]
+        """
+        X = self._getX()
+        Xgrad = self._getXgrad(i)
+        import pdb
+        RV = SP.dot(X,Xgrad.T)+SP.dot(Xgrad,X.T)
+        return RV 
 
-    def Kgrad_theta(self,theta,X,i):
-        assert i<2, 'unknown hyperparameter'
-        if i==0:
-            _theta = SP.array([theta[0]])
-            return self.covar_lin.Kgrad_theta(_theta,X,0,hack=False)
-        if i==1:
-            _theta = SP.array([theta[1]])
-            return self.covar_iso.Kgrad_theta(_theta,X,0)
+    def _calcNumberParams(self):
+        """
+        calculates the number of parameters
+        """
+        self.n_params = int(self.P*self.rank)
 
-    def Kgrad_x(self,theta,X,n=None,d=None):
-        _theta = SP.array([theta[0]])
-        return self.covar_lin.Kgrad_x(_theta,X,n,d)
+    def _getX(self):
+        """
+        reshape the parameters
+        """
+        RV = SP.reshape(self.params,(self.P,self.rank),order='F')
+        return RV
 
+    def _getXgrad(self,i):
+        """
+        reshape the parameters
+        """
+        zeros = SP.zeros(self.n_params)
+        zeros[i] = 1
+        RV = SP.reshape(zeros,(self.P,self.rank),order='F')
+        return RV
 
-
-
-class LowRankArdCF(CovarianceFunction):
-    def __init__(self,n_dimensions,n_hyperparameters):
-        self.n_dimensions = n_dimensions
-        self.n_hyperparameters = 1+n_hyperparameters
-        self.covar_lin = LinearCF(n_dimensions)
-        self.covar_diag = DiagArdCF(n_dimensions,n_hyperparameters)
-        
-    def K(self,theta,X,X2=None):
-        _theta = SP.array([theta[0]])
-        Klin = self.covar_lin.K(_theta,X,X2,hack=False)
-        _theta = theta[1:]
-        Kiso = self.covar_diag.K(_theta,X,X2)
-        return Klin + Kiso
-
-    def Kgrad_theta(self,theta,X,i):
-        assert i<self.n_hyperparameters, 'unknown hyperparameter'
-        if i==0:
-            _theta = SP.array([theta[0]])
-            return self.covar_lin.Kgrad_theta(_theta,X,0,hack=False)
-        if i>0:
-            _theta =theta[1:]
-            return self.covar_diag.Kgrad_theta(_theta,X,0)
-
-    def Kgrad_x(self,theta,X,n=None,d=None):
-        _theta = SP.array([theta[0]])
-        return self.covar_lin.Kgrad_x(_theta,X,n,d)

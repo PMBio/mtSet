@@ -2,15 +2,14 @@ import sys
 sys.path.append('./../../..')
 from mtSet.pycore.utils.utils import smartSum
 from mtSet.pycore.mean import mean
+import mtSet.pycore.covariance as covariance
 
 import pdb
 import numpy as NP
 import scipy as SP
 import scipy.linalg as LA
 import numpy.linalg as NLA
-# import LIMIX
 import sys
-import limix
 import time as TIME
 
 from gp_base import GP
@@ -59,14 +58,9 @@ class gp2kronSumSvd(GP):
         """
         self.rank=rank
         # col covars
-        self.Cr = limix.CLowRankCF(self.P,self.rank)
+        self.Cr = covariance.lowrank(self.P,self.rank)
         self.Cr.setParams(1e-3*SP.randn(self.P*self.rank))
         self.Cn = Cn
-        # cache covariances
-        C  = limix.CSumCF()
-        C.addCovariance(self.Cr)
-        C.addCovariance(self.Cn)
-        self.col_cache = limix.CCovarianceFunctionCacheOld(C)
 
     def setMean(self,mean):
         """
@@ -130,6 +124,8 @@ class gp2kronSumSvd(GP):
         """
         Update cache
         """
+        cov_params_have_changed = self.Cr.params_have_changed or self.Cn.params_have_changed
+
         if self.Xr_has_changed:
             start = TIME.time()
             """ Row SVD Bg + Noise """
@@ -141,7 +137,7 @@ class gp2kronSumSvd(GP):
             smartSum(self.time,'cache_XXchanged',TIME.time()-start)
             smartSum(self.count,'cache_XXchanged',1)
         
-        if not self.col_cache.isInSync():
+        if cov_params_have_changed:
             start = TIME.time()
             """ Col SVD Noise """
             S2,U2 = LA.eigh(self.Cn.K()+self.offset*SP.eye(self.P))
@@ -159,7 +155,7 @@ class gp2kronSumSvd(GP):
             self.mean.setColRotation(self.cache['Lc'])
 
 
-        if not self.col_cache.isInSync() or self.Xr_has_changed:
+        if cov_params_have_changed or self.Xr_has_changed:
             """ S """
             self.cache['s'] = SP.kron(self.cache['Scstar'],self.cache['Srstar'])+1
             self.cache['d'] = 1./self.cache['s']
@@ -174,8 +170,8 @@ class gp2kronSumSvd(GP):
 
         self.Y_has_changed = False
         self.Xr_has_changed = False
-        self.col_cache.setSync()
-
+        self.Cr.params_have_changed = False
+        self.Cn.params_have_changed = False
 
     def LML(self,params=None,*kw_args):
         """

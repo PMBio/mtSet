@@ -3,16 +3,15 @@ sys.path.append('./../../..')
 import pdb
 from mtSet.pycore.utils.utils import dumpDictHdf5
 from mtSet.pycore.utils.utils import smartDumpDictHdf5
-from mtSet.pycore.modules.varianceDecompositionPyGP import VarianceDecompositionPyGP
+from mtSet.pycore.utils.fit_utils import fitPairwiseModel
 
 # core
 from mtSet.pycore.gp import gp3kronSum
 from mtSet.pycore.gp import gp2kronSumSvd
 from mtSet.pycore.gp import gp2kronSum
 from mtSet.pycore.mean import mean
+import mtSet.pycore.covariance as covariance
 import mtSet.pycore.optimize.optimize_bfgs as OPT
-# limix
-import limix
 
 import h5py
 import pdb
@@ -91,7 +90,8 @@ class MultiTraitSetTest():
             self.rank_r = 1
             self.rank_g = 1
             self.rank_n = 1
-            colCovarType = 'diag'
+            # ideally should be diag
+            colCovarType = 'freeform'
         elif colCovarType is None:
             colCovarType='freeform'
 
@@ -365,20 +365,8 @@ class MultiTraitSetTest():
         Returns:
             LIMIX::PCovarianceFunction for Trait covariance matrix
         """
-        if trait_covar_type=='diag':
-            cov = limix.CDiagonalCF(self.P)
-        elif trait_covar_type=='freeform':
-            cov = limix.CFreeFormCF(self.P)
-        elif trait_covar_type=='lowrank_id':
-            cov = limix.CSumCF()
-            cov.addCovariance(limix.CLowRankCF(self.P,rank))
-            cov.addCovariance(limix.CFixedCF(SP.eye(self.P)))
-        elif trait_covar_type=='lowrank_diag':
-            cov = limix.CSumCF()
-            cov.addCovariance(limix.CLowRankCF(self.P,rank))
-            cov.addCovariance(limix.CDiagonalCF(self.P))
-        else:
-            assert True==False, 'VarianceDecomposition:: trait_covar_type not valid'
+        assert trait_covar_type in 'freeform', '%s not supported yet'%trait_covar_type
+        cov = covariance.freeform(self.P)
         return cov
 
     def _initParams(self):
@@ -410,14 +398,9 @@ class MultiTraitSetTest():
                             'Cn':SP.ones(params0_Cn.shape[0],dtype=bool)}
             else:
                 if self.colCovarType=='freeform':
-                    vc = VarianceDecompositionPyGP(self.Y,self.XX)
-                    _RV = vc.fitPairwiseModel(verbose=False)
-                    offset_g = abs(SP.minimum(LA.eigh(_RV['Cg0'])[0].min(),0))+1e-4
-                    offset_n = abs(SP.minimum(LA.eigh(_RV['Cn0'])[0].min(),0))+1e-4
-                    Lg = LA.cholesky(_RV['Cg0']+offset_g*SP.eye(self.P))
-                    Ln = LA.cholesky(_RV['Cn0']+offset_n*SP.eye(self.P))
-                    params0_Cg = SP.concatenate([Lg[:,p][:p+1] for p in range(self.P)])
-                    params0_Cn = SP.concatenate([Ln[:,p][:p+1] for p in range(self.P)])
+                    _RV = fitPairwiseModel(self.Y,self.XX,verbose=False)
+                    params0_Cg = _RV['params0_Cg'] 
+                    params0_Cn = _RV['params0_Cn'] 
                 #else:
                 #    vc = VAR.VarianceDecomposition(self.Y)
                 #    _RV = vc._getH2singleTrait(self.XX)
