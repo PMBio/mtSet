@@ -42,6 +42,7 @@ class gp3kronSum(GP):
         self.time  = {}
         self.count = {}
 
+
     def get_time(self):
         """ returns time dictionary """
         return self.time

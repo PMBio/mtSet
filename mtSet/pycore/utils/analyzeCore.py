@@ -15,13 +15,9 @@ from mtSet.pycore.utils.read_utils import readCovarianceMatrixFile
 from mtSet.pycore.utils.read_utils import readCovariatesFile
 from mtSet.pycore.utils.read_utils import readPhenoFile
 from mtSet.pycore.external.limix import plink_reader
- 
-<<<<<<< HEAD
+import scipy as SP
 
-def scan(bfile,Y,cov,null,wnds,minSnps,i0,i1,perm_i,outfile,F):
-=======
-def scan(bfile,Y,cov,null,wnds,minSnps,i0,i1,perm_i,resfile):
->>>>>>> a32071dec8dc78f800e65e43c2bcefa9be5db056
+def scan(bfile,Y,cov,null,wnds,minSnps,i0,i1,perm_i,resfile,F):
 
     if perm_i is not None:
         print 'Generating permutation (permutation %d)'%perm_i
@@ -63,7 +59,10 @@ def analyze(options):
     wnds = readWindowsFile(options.wfile)
 
     F = None
-    if options.ffile: F = readCovariatesFile(options.ffile)
+    if options.ffile:
+        F = readCovariatesFile(options.ffile)
+        null['params_mean'] = SP.loadtxt(options.nfile + '.f0')
+        
 
     if F is not None: assert Y.shape[0]==F.shape[0], 'dimensions mismatch'
 
@@ -85,11 +84,7 @@ def analyze(options):
 
     # analysis
     t0 = time.time()
-<<<<<<< HEAD
-    scan(options.bfile,Y,cov,null,wnds,options.minSnps,options.i0,options.i1,options.perm_i,outfile,F)
-=======
-    scan(options.bfile,Y,cov,null,wnds,options.minSnps,options.i0,options.i1,options.perm_i,resfile)
->>>>>>> a32071dec8dc78f800e65e43c2bcefa9be5db056
+    scan(options.bfile,Y,cov,null,wnds,options.minSnps,options.i0,options.i1,options.perm_i,resfile,F)
     t1 = time.time()
     print '... finished in %s seconds'%(t1-t0)
 

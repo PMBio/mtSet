@@ -17,12 +17,8 @@ if __name__ == "__main__":
     parser.add_option("--pfile", dest='pfile', type=str, default=None)
     parser.add_option("--nfile", dest='nfile', type=str, default=None)
     parser.add_option("--wfile", dest='wfile', type=str, default=None)
-<<<<<<< HEAD
     parser.add_option("--ffile", dest='ffile', type=str, default=None)
-    parser.add_option("--outdir", dest='outdir', type=str, default=None)
-=======
     parser.add_option("--resdir", dest='resdir', type=str, default=None)
->>>>>>> a32071dec8dc78f800e65e43c2bcefa9be5db056
     parser.add_option("--trait_idx",dest='trait_idx',type=str, default=None)
 
     # start window, end window and permutations

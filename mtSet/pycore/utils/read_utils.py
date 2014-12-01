@@ -42,6 +42,7 @@ def readCovariatesFile(fFile):
     """
     assert os.path.exists(fFile), '%s is missing.'%fFile
     F = SP.loadtxt(fFile)
+    if F.ndim==1: F=F[:,SP.newaxis]
     return F
 
 
