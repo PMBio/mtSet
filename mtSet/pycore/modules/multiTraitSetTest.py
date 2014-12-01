@@ -1,6 +1,5 @@
 import sys
 sys.path.append('./../../..')
-import pdb
 from mtSet.pycore.utils.utils import dumpDictHdf5
 from mtSet.pycore.utils.utils import smartDumpDictHdf5
 from mtSet.pycore.utils.fit_utils import fitPairwiseModel
@@ -407,7 +406,7 @@ class MultiTraitSetTest():
         else:
             if self.bgRE:
                 if self.colCovarType=='freeform':
-                    _RV = fitPairwiseModel(self.Y,self.XX,verbose=False)
+                    _RV = fitPairwiseModel(self.Y,XX=self.XX,S_XX=self.S_XX,U_XX=self.U_XX,verbose=False)
                     params0_Cg = _RV['params0_Cg'] 
                     params0_Cn = _RV['params0_Cn'] 
                 #else:

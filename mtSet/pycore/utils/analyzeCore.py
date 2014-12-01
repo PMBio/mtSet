@@ -15,14 +15,14 @@ from mtSet.pycore.utils.read_utils import readCovarianceMatrixFile
 from mtSet.pycore.utils.read_utils import readPhenoFile
 from mtSet.pycore.external.limix import plink_reader
  
-def scan(bfile,Y,K,params0,wnds,minSnps,i0,i1,perm_i,outfile):
+def scan(bfile,Y,cov,params0,wnds,minSnps,i0,i1,perm_i,outfile):
 
     if perm_i is not None:
         print 'Generating permutation (permutation %d)'%perm_i
         NP.random.seed(perm_i)
         perm = NP.random.permutation(Y.shape[0])
 
-    mtSet = MTST.MultiTraitSetTest(Y,K)
+    mtSet = MTST.MultiTraitSetTest(Y,S_XX=cov['eval'],U_XX=cov['evec'])
     #mtSet.setNull(null)
     #bed = Bed(bfile,standardizeSNPs=False)
 
@@ -50,7 +50,7 @@ def analyze(options):
 
     # load data
     print 'import data'
-    K,ids = readCovarianceMatrixFile(options.cfile)
+    cov = readCovarianceMatrixFile(options.cfile,readCov=False)
     Y = readPhenoFile(options.pfile)
     null = readNullModelFile(options.nfile)
     wnds = readWindowsFile(options.wfile)
@@ -73,7 +73,7 @@ def analyze(options):
     # analysis
     print 'fitting model'
     t0 = time.time()
-    scan(options.bfile,Y,K,null,wnds,options.minSnps,options.i0,options.i1,options.perm_i,outfile)
+    scan(options.bfile,Y,cov,null,wnds,options.minSnps,options.i0,options.i1,options.perm_i,outfile)
     t1 = time.time()
     print '... finished in %s seconds'%(t1-t0)
 

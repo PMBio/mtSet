@@ -8,6 +8,7 @@ import subprocess
 import pdb
 import sys
 import numpy as NP
+import numpy.linalg as LA
 from optparse import OptionParser
 import time
 import mtSet.pycore.modules.multiTraitSetTest as MTST
@@ -73,17 +74,33 @@ def computeCovarianceMatrix(plink_path,bfile,cfile,sim_type='RRM'):
         old_fn = os.path.join(out_dir, 'plink.mibs.id')
         os.rename(old_fn,cfile+'.cov.id')
 
-def fit_null(Y,K,nfile):
+def eighCovarianceMatrix(cfile):
+    """
+    compute similarity matrix using plink
+
+    Input:
+    cfile        :   the covariance matrix will be read from cfile.cov while the eigenvalues and the eigenverctors will
+                        be written to cfile.cov.eval and cfile.cov.evec respectively
+    """
+    # precompute eigenvalue decomposition
+    K = NP.loadtxt(cfile+'.cov')
+    S,U = LA.eigh(K)
+    NP.savetxt(cfile+'.cov.eval',S)
+    NP.savetxt(cfile+'.cov.evec',U)
+
+def fit_null(Y,S_XX,U_XX,nfile):
     """
     fit null model
 
-    Y   NxP phenotype matrix
-    K   NxN phenotype matrix
+    Y       NxP phenotype matrix
+    S_XX    eigenvalues of the relatedness matrix 
+    U_XX    eigen vectors of the relatedness matrix
     """
-    mtSet = MTST.MultiTraitSetTest(Y,K)
+    mtSet = MTST.MultiTraitSetTest(Y,S_XX=S_XX,U_XX=U_XX)
     RV = mtSet.fitNull(cache=False)
     params = NP.array([RV['params0_g'],RV['params0_n']])
     NP.savetxt(nfile+'.p0',params)
+    NP.savetxt(nfile+'.nll0',RV['NLL0'])
     NP.savetxt(nfile+'.cg0',RV['Cg'])
     NP.savetxt(nfile+'.cn0',RV['Cn'])
 
@@ -103,16 +120,21 @@ def preprocess(options):
        computeCovarianceMatrix(options.plink_path,options.bfile,options.cfile,options.sim_type)
        t1 = time.time()
        print '... finished in %s seconds'%(t1-t0)
+       print 'Computing eigenvalue decomposition'
+       t0 = time.time()
+       eighCovarianceMatrix(options.cfile) 
+       t1 = time.time()
+       print '... finished in %s seconds'%(t1-t0)
 
     """ fitting the null model """
     if options.fit_null:
         print 'Fitting null model'
         assert options.pfile is not None, 'phenotype file needs to be specified'
-        K,ids = readCovarianceMatrixFile(options.cfile)
+        cov = readCovarianceMatrixFile(options.cfile,readCov=False)
         Y = readPhenoFile(options.pfile)
-        assert Y.shape[0]==K.shape[0],  'dimension mismatch'
+        assert Y.shape[0]==cov['eval'].shape[0],  'dimension mismatch'
         t0 = time.time()
-        fit_null(Y,K,options.nfile)
+        fit_null(Y,cov['eval'],cov['evec'],options.nfile)
         t1 = time.time()
         print '.. finished in %s seconds'%(t1-t0)
 

@@ -10,25 +10,27 @@ def readBimFile(basefilename):
     rv = SP.loadtxt(bim_fn,delimiter='\t',usecols = (0,3),dtype=int)
     return rv
 
-def readCovarianceMatrixFile(cfile):
+def readCovarianceMatrixFile(cfile,readCov=True,readEig=True):
     """"
     reading in similarity matrix
 
     cfile   File containing the covariance matrix. The corresponding ID file must be specified in cfile.id)
     """
     covFile = cfile+'.cov'
-    idFile  = cfile+'.cov.id'
+    evalFile = cfile+'.cov.eval'
+    evecFile = cfile+'.cov.evec'
 
-    assert os.path.exists(covFile), '%s is missing.'%covFile
-    assert os.path.exists(idFile), '%s is missing.'%idFile
+    RV = {}
+    if readCov:
+        assert os.path.exists(covFile), '%s is missing.'%covFile
+        RV['K'] = SP.loadtxt(covFile)
+    if readEig:
+        assert os.path.exists(evalFile), '%s is missing.'%evalFile
+        assert os.path.exists(evecFile), '%s is missing.'%evecFile
+        RV['eval'] = SP.loadtxt(evalFile)
+        RV['evec'] = SP.loadtxt(evecFile)
 
-    K   = SP.loadtxt(covFile)
-    ids = SP.loadtxt(idFile,dtype=str)
-    assert K.shape[0]==K.shape[1], 'dimension mismatch'
-    assert ids.shape[0]==K.shape[0], 'dimension mismatch'
-    assert SP.all(ids[:,0]==ids[:,1]), 'ids are not symmetric in %s.id'%cfile
-
-    return K,ids
+    return RV
 
 def readPhenoFile(pfile):
     """"

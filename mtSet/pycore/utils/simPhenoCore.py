@@ -39,7 +39,7 @@ def simPheno(options):
     
     print 'importing covariance matrix'
     if options.cfile is None: options.cfile=options.bfile
-    XX,_ = readCovarianceMatrixFile(options.cfile)
+    XX = readCovarianceMatrixFile(options.cfile,readEig=False)['K']
 
     print 'simulating phenotypes'
 
