@@ -26,24 +26,32 @@ def genPhenoCube(sim,Xr,vTotR=4e-3,nCausalR=10,pCommonR=0.8,vTotBg=0.4,pHidd=0.6
     return Y,info
 
 def simPheno(options):
+
+    """
     print 'importing genotype'
+    import pdb; pdb.set_trace()
     rv = plink_reader.readBED(options.bfile)
     X  = rv['snps'].T
     rv = readBimFile(options.bfile)
     chrom = rv[:,0]
     pos   = rv[:,1]
-
+    """
+    
     print 'importing covariance matrix'
     if options.cfile is None: options.cfile=options.bfile
     XX,_ = readCovarianceMatrixFile(options.cfile)
 
     print 'simulating phenotypes'
+
+    """
     SP.random.seed(options.seed)
     chrom_i = SP.random.permutation(chrom)[0]
-    simulator = sim.CSimulator(X,XX=XX,chrom=chrom,pos=pos,P=options.nTraits)
-    Xr,region = simulator.getRegion(chrom_i=chrom_i,size=options.windowSize,min_nSNPs=options.nCausalR)
-    Y,info    = genPhenoCube(simulator,Xr,vTotR=options.vTotR,nCausalR=options.nCausalR,pCommonR=options.pCommonR,
-                             vTotBg=options.vTotBg,pHidd=options.pHidden,pCommon=options.pCommon)
+    """
+   
+    simulator = sim.CSimulator(bfile=options.bfile,XX=XX,P=options.nTraits)
+    Xr,region = simulator.getRegion(chrom_i=options.chrom,size=options.windowSize,min_nSNPs=options.nCausalR,pos_min=options.pos_min,pos_max=options.pos_max)
+    
+    Y,info    = genPhenoCube(simulator,Xr,vTotR=options.vTotR,nCausalR=options.nCausalR,pCommonR=options.pCommonR,vTotBg=options.vTotBg,pHidd=options.pHidden,pCommon=options.pCommon)
 
     print 'exporting pheno file'
     if options.pfile is not None:

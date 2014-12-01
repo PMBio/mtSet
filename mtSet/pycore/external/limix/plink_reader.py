@@ -19,7 +19,7 @@ import os
 import numpy as SP
 import csv
 
-def readBIM(basefilename,usecols=(0,1,2,3)):
+def readBIM(basefilename,usecols=None):
     """
     helper method for speeding up read BED
     """
@@ -28,7 +28,7 @@ def readBIM(basefilename,usecols=(0,1,2,3)):
     return fam
     
 
-def readFAM(basefilename,usecols=(0,1)):
+def readFAM(basefilename,usecols=None):
     """
     helper method for speeding up read FAM
     """
@@ -68,12 +68,13 @@ def readBED(basefilename, blocksize = 1, start = 0, nSNPs = SP.inf, startpos = N
     --------------------------------------------------------------------------    
     '''
     
-    if bim is None: bim = readBIM(basefilename)
-    if fam is None: fam = readFAM(basefilename)
+    if bim is None: bim = readBIM(basefilename,usecols=(0,1,2,3))
+    if fam is None: fam = readFAM(basefilename,usecols=(0,1))
 
     
     rs = bim[:,1]
     pos = SP.array(bim[:,(0,2,3)],dtype = 'float')
+
 
     
     if startpos is not None:
