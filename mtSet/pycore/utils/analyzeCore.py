@@ -15,7 +15,7 @@ from mtSet.pycore.utils.read_utils import readCovarianceMatrixFile
 from mtSet.pycore.utils.read_utils import readPhenoFile
 from mtSet.pycore.external.limix import plink_reader
  
-def scan(bfile,Y,cov,params0,wnds,minSnps,i0,i1,perm_i,outfile):
+def scan(bfile,Y,cov,null,wnds,minSnps,i0,i1,perm_i,outfile):
 
     if perm_i is not None:
         print 'Generating permutation (permutation %d)'%perm_i
@@ -23,12 +23,13 @@ def scan(bfile,Y,cov,params0,wnds,minSnps,i0,i1,perm_i,outfile):
         perm = NP.random.permutation(Y.shape[0])
 
     mtSet = MTST.MultiTraitSetTest(Y,S_XX=cov['eval'],U_XX=cov['evec'])
-    #mtSet.setNull(null)
-    #bed = Bed(bfile,standardizeSNPs=False)
+    mtSet.setNull(null)
 
+    #bed = Bed(bfile,standardizeSNPs=False)
     bim = plink_reader.readBIM(bfile,usecols=(0,1,2,3))
     fam = plink_reader.readFAM(bfile,usecols=(0,1))
    
+    print 'fitting model'
     wnd_file = csv.writer(open(outfile,'wb'),delimiter='\t')
     for wnd_i in range(i0,i1):
         print '.. window %d - (%d, %d-%d) - %d snps'%(wnd_i,int(wnds[wnd_i,1]),int(wnds[wnd_i,2]),int(wnds[wnd_i,3]),int(wnds[wnd_i,-1]))
@@ -71,7 +72,6 @@ def analyze(options):
     outfile = os.path.join(out_dir,fname)
 
     # analysis
-    print 'fitting model'
     t0 = time.time()
     scan(options.bfile,Y,cov,null,wnds,options.minSnps,options.i0,options.i1,options.perm_i,outfile)
     t1 = time.time()

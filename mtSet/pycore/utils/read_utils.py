@@ -50,10 +50,13 @@ def readNullModelFile(nfile):
 
     nfile   File containing null model info
     """
-    nullmod_file = nfile+'.p0'
-    assert os.path.exists(nullmod_file), '%s is missing.'%nullmod_file
-    params = SP.loadtxt(nullmod_file)
-    rv = {'params0_g':params[0,:],'params0_n':params[1,:]}
+    params0_file = nfile+'.p0'
+    nll0_file = nfile+'.nll0'
+    assert os.path.exists(params0_file), '%s is missing.'%oarams0_file
+    assert os.path.exists(nll0_file), '%s is missing.'%nll0_file
+    params = SP.loadtxt(params0_file)
+    NLL0 = SP.array([float(SP.loadtxt(nll0_file))])
+    rv = {'params0_g':params[0,:],'params0_n':params[1,:],'NLL0':NLL0}
     return rv
 
 def readWindowsFile(wfile):

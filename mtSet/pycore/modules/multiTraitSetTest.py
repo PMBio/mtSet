@@ -208,8 +208,10 @@ class MultiTraitSetTest():
             if self.null is None:
                 if verbose:     ".. fitting null model upstream"
                 self.fitNull()
-            if self.XX is None: params0 = {'Cn':self.null['params0_n']}
-            else:               params0 = {'Cg':self.null['params0_g'],'Cn':self.null['params0_n']}
+            if self.bgRE:
+                params0 = {'Cg':self.null['params0_g'],'Cn':self.null['params0_n']}
+            else:
+                params0 = {'Cn':self.null['params0_n']}
             if 'params_mean' in self.null:
                 params0['mean'] = self.null['params_mean']
         Xr *= SP.sqrt(self.N/(Xr**2).sum())
