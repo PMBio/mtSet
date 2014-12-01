@@ -42,6 +42,7 @@ def readPhenoFile(pfile):
     phenoFile = pfile+'.phe'
     assert os.path.exists(phenoFile), '%s is missing.'%phenoFile
     Y = SP.loadtxt(phenoFile)
+    Y -= Y.mean(0); Y /= Y.std(0)
     return Y
 
 def readNullModelFile(nfile):
