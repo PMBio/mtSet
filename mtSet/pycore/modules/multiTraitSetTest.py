@@ -26,7 +26,7 @@ import os
 
 class MultiTraitSetTest():
 
-    def __init__(self,Y=None,XX=None,traitID=None,colCovarType=None,rank_r=1,rank_g=1,rank_n=1,F=None):
+    def __init__(self,Y=None,XX=None,S_XX=None,U_XX=None,traitID=None,colCovarType=None,rank_r=1,rank_g=1,rank_n=1,F=None):
         """
         Constructor
         Args:
@@ -43,7 +43,7 @@ class MultiTraitSetTest():
 
         # data
         self.Y  = Y
-        self.XX = XX
+        self.set_XX(XX,S_XX,U_XX)
         #dimensions
         self.N,self.P = Y.shape
         #traitID
@@ -61,6 +61,22 @@ class MultiTraitSetTest():
         self.infoOpt   = None
         self.infoOptST = None
         pass
+
+    def set_XX(self,XX=None,S_XX=None,U_XX=None):
+        """
+        set XX
+        Args:
+            XX:     fixed row covariance matrix
+            S_XX:   eigenvalues of XX
+            U_XX:   eigenvectors of XX
+        """
+        bothNone = S_XX is None and U_XX is None
+        noneNone = S_XX is not None and U_XX is not None
+        assert bothNone or noneNone, 'Please either specify both S_XX and U_XX or none of them'
+        self.XX  = XX
+        self.S_XX = S_XX
+        self.U_XX = U_XX
+        self.bgRE = self.XX is not None or noneNone
 
     def _initMean(self,Y,F=None):
         """
@@ -101,8 +117,12 @@ class MultiTraitSetTest():
         self.colCovarType = colCovarType
         self.Cg = self._buildTraitCovar(colCovarType,rank_g)
         self.Cn = self._buildTraitCovar(colCovarType,rank_n)
-        if self.XX is None: self.gp = gp2kronSumSvd(self.mean,self.Cn,rank=self.rank_r)
-        else:               self.gp = gp3kronSum(self.mean,self.Cg,self.Cn,self.XX,rank=self.rank_r)
+        XXnotNone = self.XX is not None
+        SUnotNone = self.S_XX is not None and self.U_XX is not None
+        if self.bgRE:
+            self.gp = gp3kronSum(self.mean,self.Cg,self.Cn,XX=self.XX,S_XX=self.S_XX,U_XX=self.U_XX,rank=self.rank_r)
+        else:
+            self.gp = gp2kronSumSvd(self.mean,self.Cn,rank=self.rank_r)
 
     def setTraitID(self,traitID):
         """ set trait id """
@@ -139,9 +159,15 @@ class MultiTraitSetTest():
             self.setNull(RV)
         else:
             start = TIME.time()
-            if self.XX is not None: XX = self.XX
-            else:               XX = SP.ones((self.N,self.N))
-            self.gpNull = gp2kronSum(self.mean,self.Cg,self.Cn,XX)
+            if self.bgRE:
+                XX = self.XX
+                S_XX = self.S_XX
+                U_XX = self.U_XX
+            else:
+                XX   = SP.eye(self.N)
+                S_XX = SP.ones(self.N)
+                U_XX = SP.eye(self.N)
+            self.gpNull = gp2kronSum(self.mean,self.Cg,self.Cn,XX=XX,S_XX=S_XX,U_XX=U_XX)
             for i in range(n_times):
                 params0,Ifilter=self._initParams()
                 conv,info = OPT.opt_hyper(self.gpNull,params0,Ifilter=Ifilter,factr=1e3)
@@ -314,7 +340,7 @@ class MultiTraitSetTest():
             """ create mtssST and fit null column by column returns all info """
             if self.mtssST is None:
                 y = SP.zeros((self.N,1)) 
-                self.mtssST = MultiTraitSetTest(y,self.XX,F=self.F)
+                self.mtssST = MultiTraitSetTest(y,XX=self.XX,S_XX=self.S_XX,U_XX=self.U_XX,F=self.F)
             RV = {}
             for p in range(self.P):
                 trait_id = self.traitID[p]
@@ -379,24 +405,7 @@ class MultiTraitSetTest():
                 params0 = {'Cg':SP.sqrt(0.5)*SP.ones(1),'Cn':SP.sqrt(0.5)*SP.ones(1)}
                 Ifilter = None
         else:
-            if self.XX is None:
-                cov = SP.cov(self.Y.T)
-                if self.colCovarType=='freeform':
-                    L = LA.cholesky(cov+1e-4*SP.eye(self.P))
-                    params0_Cn = SP.concatenate([L[:,p][:p+1] for p in range(self.P)])
-                #else:
-                #    S,U=LA.eigh(cov)
-                #    a = SP.sqrt(S[-self.rank_r:])[:,SP.newaxis]*U[:,-self.rank_r:]
-                #    if self.colCovarType=='lowrank_id':
-                #        c = SP.sqrt(S[:-self.rank_r].mean())*SP.ones(1)
-                #    else:
-                #        c = SP.sqrt(S[:-self.rank_r].mean())*SP.ones(self.P)
-                #    params0_Cn = SP.concatenate([a.T.ravel(),c])
-                params0 = {'Cg':SP.zeros(self.Cg.getParams().shape[0]),
-                            'Cn':params0_Cn}
-                Ifilter = {'Cg':SP.zeros(self.Cg.getParams().shape[0],dtype=bool),
-                            'Cn':SP.ones(params0_Cn.shape[0],dtype=bool)}
-            else:
+            if self.bgRE:
                 if self.colCovarType=='freeform':
                     _RV = fitPairwiseModel(self.Y,self.XX,verbose=False)
                     params0_Cg = _RV['params0_Cg'] 
@@ -414,6 +423,23 @@ class MultiTraitSetTest():
                 #    params0_Cn = SP.concatenate([1e-3*SP.randn(self.rank_n*self.P),cn])
                 params0 = {'Cg':params0_Cg,'Cn':params0_Cn}
                 Ifilter = None
+            else:
+                cov = SP.cov(self.Y.T)
+                if self.colCovarType=='freeform':
+                    L = LA.cholesky(cov+1e-4*SP.eye(self.P))
+                    params0_Cn = SP.concatenate([L[:,p][:p+1] for p in range(self.P)])
+                #else:
+                #    S,U=LA.eigh(cov)
+                #    a = SP.sqrt(S[-self.rank_r:])[:,SP.newaxis]*U[:,-self.rank_r:]
+                #    if self.colCovarType=='lowrank_id':
+                #        c = SP.sqrt(S[:-self.rank_r].mean())*SP.ones(1)
+                #    else:
+                #        c = SP.sqrt(S[:-self.rank_r].mean())*SP.ones(self.P)
+                #    params0_Cn = SP.concatenate([a.T.ravel(),c])
+                params0 = {'Cg':SP.zeros(self.Cg.getParams().shape[0]),
+                            'Cn':params0_Cn}
+                Ifilter = {'Cg':SP.zeros(self.Cg.getParams().shape[0],dtype=bool),
+                            'Cn':SP.ones(params0_Cn.shape[0],dtype=bool)}
         if len(self.mean.F)>0:
             params0['mean'] = 1e-6*SP.randn(self.mean.getParams().shape[0])
             if Ifilter is not None:

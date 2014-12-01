@@ -15,21 +15,24 @@ from gp_base import GP
 
 class gp3kronSum(GP):
  
-    def __init__(self,mean,Cg,Cn,XX,rank=1,Xr=None,lazy=False,offset=1e-4):
+    def __init__(self,mean,Cg,Cn,XX=None,S_XX=None,U_XX=None,rank=1,Xr=None,lazy=False,offset=1e-4):
         """
         Y:      Phenotype matrix
         Cg:     LIMIX trait-to-trait covariance for genetic contribution
         Cn:     LIMIX trait-to-trait covariance for noise
         XX:     Matrix for fixed sample-to-sample covariance function
+        S_XX:   Eigenvalues of XX
+        U_XX:   Eigenvectors of XX
         """
+        # init cache
+        self.cache = {} 
         # pheno
         self.setMean(mean)
         # colCovariances
         self.setColCovars(rank,Cg,Cn)
         # row covars
-        self.set_XX(XX)
+        self.set_XX(XX,S_XX,U_XX)
         if Xr is not None:    self.set_Xr(Xr)
-        self.cache = {} 
         #offset for trait covariance matrices
         self.setOffset(offset)
         self.params = None
@@ -83,12 +86,20 @@ class gp3kronSum(GP):
         """
         self.offset = offset
 
-    def set_XX(self,XX):
+    def set_XX(self,XX=None,S_XX=None,U_XX=None):
         """
         set pop struct row covariance
         """
-        self.XX = XX
-        self.XX_has_changed = True
+        XXnotNone = XX is not None
+        SUnotNone = S_XX is not None and U_XX is not None
+        assert XXnotNone or SUnotNone, 'Specify either XX or S_XX and U_XX!'
+        if SUnotNone:
+            self.cache['Srstar'] = S_XX 
+            self.cache['Lr'] = U_XX.T
+            self.XX_has_changed = False
+        else:
+            self.XX = XX
+            self.XX_has_changed = True
 
     def set_Xr(self,Xr):
         """
