@@ -9,6 +9,7 @@ path_mtSet = os.path.join(path_abs,'../..')
 sys.path.append(path_mtSet)
 from mtSet.pycore.utils.simPhenoCore import simPheno
 from optparse import OptionParser
+import scipy as SP
 
 if __name__ == "__main__":
 
@@ -20,6 +21,10 @@ if __name__ == "__main__":
     parser.add_option("--seed",      dest='seed',       type=int, default=0)
     parser.add_option("--nTraits",   dest='nTraits',    type=int, default=4)
     parser.add_option("--windowSize",dest='windowSize', type=int, default=1.5e4)
+
+    parser.add_option("--chrom", dest='chrom',  type=str, default=None)
+    parser.add_option("--minPos",dest='pos_min',type=int, default=None)
+    parser.add_option("--maxPos",dest='pos_max',type=int, default=None)
 
     parser.add_option("--vTotR",   dest='vTotR', type=float, default=0.1)
     parser.add_option("--nCausalR",dest='nCausalR', type=int,default=10)
