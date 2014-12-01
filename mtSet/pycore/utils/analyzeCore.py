@@ -26,8 +26,8 @@ def scan(bfile,Y,K,params0,wnds,minSnps,i0,i1,perm_i,outfile):
     #mtSet.setNull(null)
     #bed = Bed(bfile,standardizeSNPs=False)
 
-    bim = plink_reader.readBIM(bfile)
-    fam = plink_reader.readFAM(bfile)
+    bim = plink_reader.readBIM(bfile,usecols=(0,1,2,3))
+    fam = plink_reader.readFAM(bfile,usecols=(0,1))
    
     wnd_file = csv.writer(open(outfile,'wb'),delimiter='\t')
     for wnd_i in range(i0,i1):

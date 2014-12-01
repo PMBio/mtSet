@@ -38,7 +38,7 @@ def postprocess(options):
     print '.. export permutation results'
     perm_file = out_file+'.perm'
     RV = NP.array([LLR0,pv0]).T
-    NP.savetxt(perm_file,RV)
+    NP.savetxt(perm_file,RV,delimiter='\t',fmt='%.6f %.6e')
 
     print '.. load test results'
     file_name = os.path.join(resdir,'test','*.res')
@@ -55,4 +55,4 @@ def postprocess(options):
     print '.. export test results'
     perm_file = out_file+'.test'
     RV_test = NP.hstack([RV_test,pv])
-    NP.savetxt(perm_file,RV_test)
+    NP.savetxt(perm_file,RV_test,delimiter='\t',fmt='%d %d %d %d %d %d %.6e %.6e')

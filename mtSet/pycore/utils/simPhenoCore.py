@@ -47,11 +47,10 @@ def simPheno(options):
     SP.random.seed(options.seed)
     chrom_i = SP.random.permutation(chrom)[0]
     """
-    import pdb; pdb.set_trace()
-    
+   
     simulator = sim.CSimulator(bfile=options.bfile,XX=XX,P=options.nTraits)
-    
     Xr,region = simulator.getRegion(chrom_i=options.chrom,size=options.windowSize,min_nSNPs=options.nCausalR,pos_min=options.pos_min,pos_max=options.pos_max)
+    
     Y,info    = genPhenoCube(simulator,Xr,vTotR=options.vTotR,nCausalR=options.nCausalR,pCommonR=options.pCommonR,vTotBg=options.vTotBg,pHidd=options.pHidden,pCommon=options.pCommon)
 
     print 'exporting pheno file'

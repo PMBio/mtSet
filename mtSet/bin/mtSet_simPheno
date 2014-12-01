@@ -22,7 +22,7 @@ if __name__ == "__main__":
     parser.add_option("--nTraits",   dest='nTraits',    type=int, default=4)
     parser.add_option("--windowSize",dest='windowSize', type=int, default=1.5e4)
 
-    parser.add_option("--chrom", dest='chrom',  type=str, default=None)
+    parser.add_option("--chrom", dest='chrom',  type=int, default=None)
     parser.add_option("--minPos",dest='pos_min',type=int, default=None)
     parser.add_option("--maxPos",dest='pos_max',type=int, default=None)
 
