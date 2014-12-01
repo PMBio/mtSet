@@ -16,17 +16,21 @@ from mtSet.pycore.utils.read_utils import readCovariatesFile
 from mtSet.pycore.utils.read_utils import readPhenoFile
 from mtSet.pycore.external.limix import plink_reader
  
-def scan(bfile,Y,K,params0,wnds,minSnps,i0,i1,perm_i,outfile,F):
+
+def scan(bfile,Y,cov,null,wnds,minSnps,i0,i1,perm_i,outfile,F):
 
     if perm_i is not None:
         print 'Generating permutation (permutation %d)'%perm_i
         NP.random.seed(perm_i)
         perm = NP.random.permutation(Y.shape[0])
 
-    mtSet = MTST.MultiTraitSetTest(Y,K,F=F)
+
+    mtSet = MTST.MultiTraitSetTest(Y,S_XX=cov['eval'],U_XX=cov['evec'],F=F)
+    mtSet.setNull(null)
     bim = plink_reader.readBIM(bfile,usecols=(0,1,2,3))
     fam = plink_reader.readFAM(bfile,usecols=(0,1))
    
+    print 'fitting model'
     wnd_file = csv.writer(open(outfile,'wb'),delimiter='\t')
     for wnd_i in range(i0,i1):
         print '.. window %d - (%d, %d-%d) - %d snps'%(wnd_i,int(wnds[wnd_i,1]),int(wnds[wnd_i,2]),int(wnds[wnd_i,3]),int(wnds[wnd_i,-1]))
@@ -48,16 +52,15 @@ def analyze(options):
 
     # load data
     print 'import data'
-
-    
-    K,ids = readCovarianceMatrixFile(options.cfile)
+    cov = readCovarianceMatrixFile(options.cfile,readCov=False)
     Y = readPhenoFile(options.pfile,idx=options.trait_idx)
+
     null = readNullModelFile(options.nfile)
     wnds = readWindowsFile(options.wfile)
 
     F = None
     if options.ffile: F = readCovariatesFile(options.ffile)
-    assert Y.shape[0]==K.shape[0],  'dimensions mismatch'
+
     if F is not None: assert Y.shape[0]==F.shape[0], 'dimensions mismatch'
 
             
@@ -77,9 +80,8 @@ def analyze(options):
     outfile = os.path.join(out_dir,fname)
 
     # analysis
-    print 'fitting model'
     t0 = time.time()
-    scan(options.bfile,Y,K,null,wnds,options.minSnps,options.i0,options.i1,options.perm_i,outfile,F)
+    scan(options.bfile,Y,cov,null,wnds,options.minSnps,options.i0,options.i1,options.perm_i,outfile,F)
     t1 = time.time()
     print '... finished in %s seconds'%(t1-t0)
 

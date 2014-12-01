@@ -8,6 +8,7 @@ import subprocess
 import pdb
 import sys
 import numpy as NP
+import numpy.linalg as LA
 from optparse import OptionParser
 import time
 import mtSet.pycore.modules.multiTraitSetTest as MTST
@@ -129,27 +130,38 @@ def computeCovarianceMatrix(plink_path,bfile,cfile,sim_type='RRM'):
     else:
         computeCovarianceMatrixPython(out_dir,bfile,cfile,sim_type=sim_type)
         
-        
-        
-        
+def eighCovarianceMatrix(cfile):
+    """
+    compute similarity matrix using plink
 
-    
+    Input:
+    cfile        :   the covariance matrix will be read from cfile.cov while the eigenvalues and the eigenverctors will
+                        be written to cfile.cov.eval and cfile.cov.evec respectively
+    """
+    # precompute eigenvalue decomposition
+    K = NP.loadtxt(cfile+'.cov')
+    S,U = LA.eigh(K); S=S[::-1]; U=U[:,::-1]
+    NP.savetxt(cfile+'.cov.eval',S)
+    NP.savetxt(cfile+'.cov.evec',U)
 
-def fit_null(Y,F,K,nfile):
+
+def fit_null(Y,S_XX,U_XX,nfile,F):
     """
     fit null model
 
-    Y   NxP phenotype matrix
-    F   NxF fixed effects matrix
-    K   NxN phenotype matrix
+    Y       NxP phenotype matrix
+    S_XX    eigenvalues of the relatedness matrix 
+    U_XX    eigen vectors of the relatedness matrix
     """
-    mtSet = MTST.MultiTraitSetTest(Y,K,F=F)
+    mtSet = MTST.MultiTraitSetTest(Y,S_XX=S_XX,U_XX=U_XX,F=F)
+
     RV = mtSet.fitNull(cache=False)
     params = NP.array([RV['params0_g'],RV['params0_n']])
     NP.savetxt(nfile+'.p0',params)
+    NP.savetxt(nfile+'.nll0',RV['NLL0'])
     NP.savetxt(nfile+'.cg0',RV['Cg'])
     NP.savetxt(nfile+'.cn0',RV['Cn'])
-    if F!=None: NP.savetxt(nfile+'.f0',RV['params_mean'])
+    if F is not None: NP.savetxt(nfile+'.f0',RV['params_mean'])
     
 
 def preprocess(options):
@@ -168,20 +180,26 @@ def preprocess(options):
        computeCovarianceMatrix(options.plink_path,options.bfile,options.cfile,options.sim_type)
        t1 = time.time()
        print '... finished in %s seconds'%(t1-t0)
+       print 'Computing eigenvalue decomposition'
+       t0 = time.time()
+       eighCovarianceMatrix(options.cfile) 
+       t1 = time.time()
+       print '... finished in %s seconds'%(t1-t0)
 
     """ fitting the null model """
     if options.fit_null:
         print 'Fitting null model'
         assert options.pfile is not None, 'phenotype file needs to be specified'
-        K,ids = readCovarianceMatrixFile(options.cfile)
+
         F = None
         if options.ffile: F = readCovariatesFile(options.ffile)
         Y = readPhenoFile(options.pfile,idx=options.trait_idx)
-        assert Y.shape[0]==K.shape[0],  'dimensions mismatch'
         if F is not None: assert Y.shape[0]==F.shape[0], 'dimensions mismatch'
-            
+        cov = readCovarianceMatrixFile(options.cfile,readCov=False)
+
+        assert Y.shape[0]==cov['eval'].shape[0],  'dimension mismatch'
         t0 = time.time()
-        fit_null(Y,F,K,options.nfile)
+        fit_null(Y,cov['eval'],cov['evec'],options.nfile, F)
         t1 = time.time()
         print '.. finished in %s seconds'%(t1-t0)
 

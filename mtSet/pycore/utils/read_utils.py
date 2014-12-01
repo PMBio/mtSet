@@ -10,25 +10,27 @@ def readBimFile(basefilename):
     rv = SP.loadtxt(bim_fn,delimiter='\t',usecols = (0,3),dtype=int)
     return rv
 
-def readCovarianceMatrixFile(cfile):
+def readCovarianceMatrixFile(cfile,readCov=True,readEig=True):
     """"
     reading in similarity matrix
 
     cfile   File containing the covariance matrix. The corresponding ID file must be specified in cfile.id)
     """
     covFile = cfile+'.cov'
-    idFile  = cfile+'.cov.id'
+    evalFile = cfile+'.cov.eval'
+    evecFile = cfile+'.cov.evec'
 
-    assert os.path.exists(covFile), '%s is missing.'%covFile
-    assert os.path.exists(idFile), '%s is missing.'%idFile
+    RV = {}
+    if readCov:
+        assert os.path.exists(covFile), '%s is missing.'%covFile
+        RV['K'] = SP.loadtxt(covFile)
+    if readEig:
+        assert os.path.exists(evalFile), '%s is missing.'%evalFile
+        assert os.path.exists(evecFile), '%s is missing.'%evecFile
+        RV['eval'] = SP.loadtxt(evalFile)
+        RV['evec'] = SP.loadtxt(evecFile)
 
-    K   = SP.loadtxt(covFile)
-    ids = SP.loadtxt(idFile,dtype=str)
-    assert K.shape[0]==K.shape[1], 'dimension mismatch'
-    assert ids.shape[0]==K.shape[0], 'dimension mismatch'
-    assert SP.all(ids[:,0]==ids[:,1]), 'ids are not symmetric in %s.id'%cfile
-
-    return K,ids
+    return RV
 
 
 def readCovariatesFile(fFile):
@@ -58,10 +60,10 @@ def readPhenoFile(pfile,idx=None):
         
     phenoFile = pfile+'.phe'
     assert os.path.exists(phenoFile), '%s is missing.'%phenoFile
-
     Y = SP.loadtxt(phenoFile,usecols=usecols)
-    
     if (usecols is not None) and (len(usecols)==1): Y = Y[:,SP.newaxis]
+        
+    Y -= Y.mean(0); Y /= Y.std(0)
     return Y
 
 def readNullModelFile(nfile):
@@ -70,11 +72,20 @@ def readNullModelFile(nfile):
 
     nfile   File containing null model info
     """
-    nullmod_file = nfile+'.p0'
-    assert os.path.exists(nullmod_file), '%s is missing.'%nullmod_file
-    params = SP.loadtxt(nullmod_file)
 
-    rv = {'params0_g':params[0],'params0_n':params[1]}
+    params0_file = nfile+'.p0'
+    nll0_file = nfile+'.nll0'
+    assert os.path.exists(params0_file), '%s is missing.'%params0_file
+    assert os.path.exists(nll0_file), '%s is missing.'%nll0_file
+    params = SP.loadtxt(params0_file)
+    NLL0 = SP.array([float(SP.loadtxt(nll0_file))])
+
+
+    if params.ndim==1:
+        rv = {'params0_g':SP.array([params[0]]),'params0_n':SP.array([params[1]]),'NLL0':NLL0}
+    else:
+        rv = {'params0_g':params[0],'params0_n':params[1],'NLL0':NLL0}
+
     return rv
 
 def readWindowsFile(wfile):

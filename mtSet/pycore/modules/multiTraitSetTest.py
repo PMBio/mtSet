@@ -1,6 +1,5 @@
 import sys
 sys.path.append('./../../..')
-import pdb
 from mtSet.pycore.utils.utils import dumpDictHdf5
 from mtSet.pycore.utils.utils import smartDumpDictHdf5
 from mtSet.pycore.utils.fit_utils import fitPairwiseModel
@@ -209,8 +208,10 @@ class MultiTraitSetTest():
             if self.null is None:
                 if verbose:     ".. fitting null model upstream"
                 self.fitNull()
-            if self.XX is None: params0 = {'Cn':self.null['params0_n']}
-            else:               params0 = {'Cg':self.null['params0_g'],'Cn':self.null['params0_n']}
+            if self.bgRE:
+                params0 = {'Cg':self.null['params0_g'],'Cn':self.null['params0_n']}
+            else:
+                params0 = {'Cn':self.null['params0_n']}
             if 'params_mean' in self.null:
                 params0['mean'] = self.null['params_mean']
         Xr *= SP.sqrt(self.N/(Xr**2).sum())
@@ -233,6 +234,7 @@ class MultiTraitSetTest():
             RV['Cn']  = self.getCn()
         RV['time']  = SP.array([TIME.time()-start])
         RV['params0'] = params0
+
         RV['var']    = self.getVariances()
         RV['conv']  = SP.array([conv])
         RV['NLLAlt']  = SP.array([self.getNLLAlt()])
@@ -407,7 +409,7 @@ class MultiTraitSetTest():
         else:
             if self.bgRE:
                 if self.colCovarType=='freeform':
-                    _RV = fitPairwiseModel(self.Y,self.XX,verbose=False)
+                    _RV = fitPairwiseModel(self.Y,XX=self.XX,S_XX=self.S_XX,U_XX=self.U_XX,verbose=False)
                     params0_Cg = _RV['params0_Cg'] 
                     params0_Cn = _RV['params0_Cn'] 
                 #else:

@@ -15,13 +15,13 @@ import copy
 import os
 import cPickle
 
-def fitSingleTraitModel(Y,XX,verbose=False):
+def fitSingleTraitModel(Y,XX=None,S_XX=None,U_XX=None,verbose=False):
     """ fit single trait model """
     N,P = Y.shape
     RV = {}
     Cg = covariance.lowrank(1)
     Cn = covariance.lowrank(1)
-    gp = gp2kronSum(mean(Y[:,0:1]),Cg,Cn,XX)
+    gp = gp2kronSum(mean(Y[:,0:1]),Cg,Cn,XX=XX,S_XX=S_XX,U_XX=U_XX)
     params0 = {'Cg':SP.sqrt(0.5)*SP.ones(1),'Cn':SP.sqrt(0.5)*SP.ones(1)}
     var = SP.zeros((P,2))
     conv1 = SP.zeros(P,dtype=bool)
@@ -36,13 +36,13 @@ def fitSingleTraitModel(Y,XX,verbose=False):
     RV['varST'] = var
     return RV
 
-def fitPairwiseModel(Y,XX,verbose=False):
+def fitPairwiseModel(Y,XX=None,S_XX=None,U_XX=None,verbose=False):
     N,P = Y.shape
     """ initilizes parameters """
-    RV = fitSingleTraitModel(Y,XX,verbose=verbose)
+    RV = fitSingleTraitModel(Y,XX=XX,S_XX=S_XX,U_XX=U_XX,verbose=verbose)
     Cg = covariance.freeform(2)
     Cn = covariance.freeform(2)
-    gp = gp2kronSum(mean(Y[:,0:2]),Cg,Cn,XX)
+    gp = gp2kronSum(mean(Y[:,0:2]),Cg,Cn,XX=XX,S_XX=S_XX,U_XX=U_XX)
     conv2 = SP.ones((P,P),dtype=bool)
     rho_g = SP.ones((P,P))
     rho_n = SP.ones((P,P))
