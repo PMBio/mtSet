@@ -14,7 +14,8 @@ import time
 import mtSet.pycore.modules.multiTraitSetTest as MTST
 from mtSet.pycore.utils.read_utils import readBimFile
 from mtSet.pycore.utils.read_utils import readCovarianceMatrixFile
-from mtSet.pycore.utils.read_utils import readPhenoFile 
+from mtSet.pycore.utils.read_utils import readPhenoFile
+from mtSet.pycore.utils.read_utils import readCovariatesFile 
 from mtSet.pycore.utils.splitter_bed import splitGeno
 import mtSet.pycore.external.limix.plink_reader as plink_reader
 import scipy as SP
@@ -143,7 +144,8 @@ def eighCovarianceMatrix(cfile):
     NP.savetxt(cfile+'.cov.eval',S,fmt='%.6f')
     NP.savetxt(cfile+'.cov.evec',U,fmt='%.6f')
 
-def fit_null(Y,S_XX,U_XX,nfile):
+
+def fit_null(Y,S_XX,U_XX,nfile,F):
     """
     fit null model
 
@@ -151,13 +153,16 @@ def fit_null(Y,S_XX,U_XX,nfile):
     S_XX    eigenvalues of the relatedness matrix 
     U_XX    eigen vectors of the relatedness matrix
     """
-    mtSet = MTST.MultiTraitSetTest(Y,S_XX=S_XX,U_XX=U_XX)
+    mtSet = MTST.MultiTraitSetTest(Y,S_XX=S_XX,U_XX=U_XX,F=F)
+
     RV = mtSet.fitNull(cache=False)
     params = NP.array([RV['params0_g'],RV['params0_n']])
     NP.savetxt(nfile+'.p0',params)
     NP.savetxt(nfile+'.nll0',RV['NLL0'])
     NP.savetxt(nfile+'.cg0',RV['Cg'])
     NP.savetxt(nfile+'.cn0',RV['Cn'])
+    if F is not None: NP.savetxt(nfile+'.f0',RV['params_mean'])
+    
 
 def preprocess(options):
     assert options.bfile!=None, 'Please specify a bfile.'
@@ -178,20 +183,27 @@ def preprocess(options):
 
     """ fitting the null model """
     if options.fit_null:
-        if options.nfile==None:
+        if options.nfile is None:
             options.nfile = os.path.split(options.bfile)[-1]
             warnings.warn('warning: nfile not specifed, set to %s'%options.nfile)
         print 'Fitting null model'
         assert options.pfile is not None, 'phenotype file needs to be specified'
-        Y = readPhenoFile(options.pfile)
-        if options.cfile==None:
+        # read pheno
+        Y = readPhenoFile(options.pfile,idx=options.trait_idx)
+        # read covariance
+        if options.cfile is None:
             cov = {'eval':None,'evec':None}
             warnings.warn('warning: cfile not specifed, a one variance compoenent model will be considered')
         else:
             cov = readCovarianceMatrixFile(options.cfile,readCov=False)
-        assert Y.shape[0]==cov['eval'].shape[0],  'dimension mismatch'
+            assert Y.shape[0]==cov['eval'].shape[0],  'dimension mismatch'
+        # read covariates
+        F = None
+        if options.ffile is not None:
+            F = readCovariatesFile(options.ffile)
+            assert Y.shape[0]==F.shape[0], 'dimensions mismatch'
         t0 = time.time()
-        fit_null(Y,cov['eval'],cov['evec'],options.nfile)
+        fit_null(Y,cov['eval'],cov['evec'],options.nfile, F)
         t1 = time.time()
         print '.. finished in %s seconds'%(t1-t0)
 

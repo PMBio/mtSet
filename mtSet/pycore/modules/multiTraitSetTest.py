@@ -234,6 +234,7 @@ class MultiTraitSetTest():
             RV['Cn']  = self.getCn()
         RV['time']  = SP.array([TIME.time()-start])
         RV['params0'] = params0
+
         RV['var']    = self.getVariances()
         RV['conv']  = SP.array([conv])
         RV['NLLAlt']  = SP.array([self.getNLLAlt()])

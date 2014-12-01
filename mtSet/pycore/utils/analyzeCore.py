@@ -12,20 +12,21 @@ import mtSet.pycore.modules.multiTraitSetTest as MTST
 from mtSet.pycore.utils.read_utils import readNullModelFile
 from mtSet.pycore.utils.read_utils import readWindowsFile
 from mtSet.pycore.utils.read_utils import readCovarianceMatrixFile
+from mtSet.pycore.utils.read_utils import readCovariatesFile
 from mtSet.pycore.utils.read_utils import readPhenoFile
 from mtSet.pycore.external.limix import plink_reader
- 
-def scan(bfile,Y,cov,null,wnds,minSnps,i0,i1,perm_i,resfile):
+import scipy as SP
+
+def scan(bfile,Y,cov,null,wnds,minSnps,i0,i1,perm_i,resfile,F):
 
     if perm_i is not None:
         print 'Generating permutation (permutation %d)'%perm_i
         NP.random.seed(perm_i)
         perm = NP.random.permutation(Y.shape[0])
 
-    mtSet = MTST.MultiTraitSetTest(Y,S_XX=cov['eval'],U_XX=cov['evec'])
-    mtSet.setNull(null)
 
-    #bed = Bed(bfile,standardizeSNPs=False)
+    mtSet = MTST.MultiTraitSetTest(Y,S_XX=cov['eval'],U_XX=cov['evec'],F=F)
+    mtSet.setNull(null)
     bim = plink_reader.readBIM(bfile,usecols=(0,1,2,3))
     fam = plink_reader.readFAM(bfile,usecols=(0,1))
    
@@ -56,10 +57,19 @@ def analyze(options):
         warnings.warn('warning: cfile not specifed, a one variance compoenent model will be considered')
     else:
         cov = readCovarianceMatrixFile(options.cfile,readCov=False)
-    Y = readPhenoFile(options.pfile)
+    Y = readPhenoFile(options.pfile,idx=options.trait_idx)
     null = readNullModelFile(options.nfile)
     wnds = readWindowsFile(options.wfile)
 
+    F = None
+    if options.ffile:
+        F = readCovariatesFile(options.ffile)
+        null['params_mean'] = SP.loadtxt(options.nfile + '.f0')
+        
+
+    if F is not None: assert Y.shape[0]==F.shape[0], 'dimensions mismatch'
+
+            
     if options.i0 is None: options.i0 = 1
     if options.i1 is None: options.i1 = wnds.shape[0]
 
@@ -77,7 +87,7 @@ def analyze(options):
 
     # analysis
     t0 = time.time()
-    scan(options.bfile,Y,cov,null,wnds,options.minSnps,options.i0,options.i1,options.perm_i,resfile)
+    scan(options.bfile,Y,cov,null,wnds,options.minSnps,options.i0,options.i1,options.perm_i,resfile,F)
     t1 = time.time()
     print '... finished in %s seconds'%(t1-t0)
 
