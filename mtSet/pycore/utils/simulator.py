@@ -87,7 +87,7 @@ class CSimulator:
 
         start = SP.nonzero(cis)[0].min()
         nSNPs  = cis.sum()
-        rv = plink_reader.readBED(self.bfile,start = start, nSNPs = nSNPs,bim=bim)
+        rv = plink_reader.readBED(self.bfile,useMAFencoding=True,start = start, nSNPs = nSNPs,bim=bim)
         Xr = rv['snps']
 
         
@@ -166,7 +166,7 @@ class CSimulator:
         """ generate  """
 
         print 'Reading in all SNPs. This is slow.'
-        rv = plink_reader.readBED(self.bfile)
+        rv = plink_reader.readBED(self.bfile,useMAFencoding=True)
         X  = rv['snps']
         S  = X.shape[1]
         vSpecific = vTot-vCommon

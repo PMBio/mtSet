@@ -36,9 +36,9 @@ def scan(bfile,Y,cov,params0,wnds,minSnps,i0,i1,perm_i,outfile):
             print 'SKIPPED: number of snps lower than minSnps'
             continue
         #RV = bed.read(PositionRange(int(wnds[wnd_i,-2]),int(wnds[wnd_i,-1])))
-        RV = plink_reader.readBED(bfile, blocksize = 1, start = int(wnds[wnd_i,4]), nSNPs = int(wnds[wnd_i,5]), order  = 'F',standardizeSNPs=False,ipos = 2,bim=bim,fam=fam)
+        RV = plink_reader.readBED(bfile, useMAFencoding=True, blocksize = 1, start = int(wnds[wnd_i,4]), nSNPs = int(wnds[wnd_i,5]), order  = 'F',standardizeSNPs=False,ipos = 2,bim=bim,fam=fam)
         
-        Xr = abs(RV['snps']-2)
+        Xr = RV['snps']
         if perm_i is not None:
             Xr = Xr[perm,:]
         rv = mtSet.optimize(Xr)

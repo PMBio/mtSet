@@ -16,6 +16,83 @@ from mtSet.pycore.utils.read_utils import readBimFile
 from mtSet.pycore.utils.read_utils import readCovarianceMatrixFile
 from mtSet.pycore.utils.read_utils import readPhenoFile 
 from mtSet.pycore.utils.splitter_bed import splitGeno
+import mtSet.pycore.external.limix.plink_reader as plink_reader
+import scipy as SP
+import warnings
+
+def computeCovarianceMatrixPlink(plink_path,out_dir,bfile,cfile,sim_type='RRM'):
+    """
+    computing the covariance matrix via plink
+    """
+    
+    print "Using plink to create covariance matrix"
+    cmd = '%s --bfile %s '%(plink_path,bfile)
+
+    if sim_type=='RRM':
+        # using variance standardization
+        cmd += '--make-rel square '
+    else:
+        raise Exception('sim_type %s is not known'%sim_type)
+
+    cmd+= '--out %s'%(os.path.join(out_dir,'plink'))
+    
+    subprocess.call(cmd,shell=True)
+
+    # move file to specified file
+    if sim_type=='RRM':
+        old_fn = os.path.join(out_dir, 'plink.rel')
+        os.rename(old_fn,cfile+'.cov')
+        
+        old_fn = os.path.join(out_dir, 'plink.rel.id')
+        os.rename(old_fn,cfile+'.cov.id')
+
+    if sim_type=='IBS':
+        old_fn = os.path.join(out_dir, 'plink.mibs')
+        os.rename(old_fn,cfile+'.cov')
+
+        old_fn = os.path.join(out_dir, 'plink.mibs.id')
+        os.rename(old_fn,cfile+'.cov.id')
+
+
+def computeCovarianceMatrixPython(out_dir,bfile,cfile,sim_type='RRM'):
+    print "Using python to create covariance matrix. This might be slow. We recommend using plink instead."
+
+    if sim_type is not 'RRM':
+        raise Exception('sim_type %s is not known'%sim_type)
+
+    """ loading data """
+    data = plink_reader.readBED(bfile,useMAFencoding=True)
+    iid  = data['iid']
+    X = data['snps']
+    N = X.shape[1]
+    print '%d variants loaded.'%N
+    print '%d people loaded.'%X.shape[0]
+    
+    """ normalizing markers """
+    print 'Normalizing SNPs...'
+    p_ref = X.mean(axis=0)/2.
+    X -= 2*p_ref
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        X /= SP.sqrt(2*p_ref*(1-p_ref))
+        
+    hasNan = SP.any(SP.isnan(X),axis=0)
+    print '%d SNPs have a nan entry. Exluding them for computing the covariance matrix.'%hasNan.sum()
+
+    """ computing covariance matrix """
+    print 'Computing relationship matrix...'
+    K = SP.dot(X[:,~hasNan],X[:,~hasNan].T)
+    K/= 1.*N
+    print 'Relationship matrix calculation complete'
+    print 'Relationship matrix written to %s.cov.'%cfile
+    print 'IDs written to %s.cov.id.'%cfile
+
+    """ saving to output """
+    NP.savetxt(cfile + '.cov', K, delimiter='\t',fmt='%.6f')
+    NP.savetxt(cfile + '.cov.id', iid, delimiter=' ',fmt='%s')
+    
+
 
 def computeCovarianceMatrix(plink_path,bfile,cfile,sim_type='RRM'):
     """
@@ -29,11 +106,12 @@ def computeCovarianceMatrix(plink_path,bfile,cfile,sim_type='RRM'):
                          the individuals to cfile.cov.id in the current folder.
     sim_type     :   {IBS/RRM} are supported
     """
+    
     try:
-        output = subprocess.check_output('%s --version --noweb'%plink_path,shell=True)
-        assert float(output.split(' ')[1][1:-3])>=1.9, 'PLINK 1.90 beta or newer must be installed'
+        output    = subprocess.check_output('%s --version --noweb'%plink_path,shell=True)
+        use_plink = float(output.split(' ')[1][1:-3])>=1.9
     except:
-        raise Exception('PLINK 1.90 beta or newer must be installed')
+        use_plink = False
 
     assert bfile!=None, 'Path to bed-file is missing.'
     assert os.path.exists(bfile+'.bed'), '%s.bed is missing.'%bfile
@@ -45,34 +123,17 @@ def computeCovarianceMatrix(plink_path,bfile,cfile,sim_type='RRM'):
     if out_dir!='' and (not os.path.exists(out_dir)):
         os.makedirs(out_dir)
 
-    cmd = '%s --bfile %s '%(plink_path,bfile)
 
-    if sim_type=='RRM':
-        # using variance standardization
-        cmd += '--make-rel square '
-    elif sim_type=='IBS':
-        cmd += '--distance square ibs '
+    if use_plink:
+        computeCovarianceMatrixPlink(plink_path,out_dir,bfile,cfile,sim_type=sim_type)
     else:
-        raise Exception('sim_type %s is not known'%sim_type)
+        computeCovarianceMatrixPython(out_dir,bfile,cfile,sim_type=sim_type)
+        
+        
+        
+        
 
-    cmd+= '--out %s'%(os.path.join(out_dir,'plink'))
-
-    subprocess.call(cmd,shell=True)
-
-    # move file to specified file
-    if sim_type=='RRM':
-        old_fn = os.path.join(out_dir, 'plink.rel')
-        os.rename(old_fn,cfile+'.cov')
-
-        old_fn = os.path.join(out_dir, 'plink.rel.id')
-        os.rename(old_fn,cfile+'.cov.id')
-
-    if sim_type=='IBS':
-        old_fn = os.path.join(out_dir, 'plink.mibs')
-        os.rename(old_fn,cfile+'.cov')
-
-        old_fn = os.path.join(out_dir, 'plink.mibs.id')
-        os.rename(old_fn,cfile+'.cov.id')
+    
 
 def eighCovarianceMatrix(cfile):
     """
