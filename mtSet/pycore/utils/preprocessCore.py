@@ -162,14 +162,9 @@ def fit_null(Y,S_XX,U_XX,nfile):
 def preprocess(options):
     assert options.bfile!=None, 'Please specify a bfile.'
 
-    """ setting the covariance matrix filename if not specified """
-    if options.cfile==None: options.cfile = os.path.split(options.bfile)[-1]
-    if options.nfile==None: options.nfile = os.path.split(options.bfile)[-1]
-    if options.wfile==None: options.wfile = os.path.split(options.bfile)[-1] + '.%d'%options.window_size
-
-
     """ computing the covariance matrix """
     if options.compute_cov:
+       assert options.cfile is not None, 'Specify covariance matrix basename'
        print 'Computing covariance matrix'
        t0 = time.time()
        computeCovarianceMatrix(options.plink_path,options.bfile,options.cfile,options.sim_type)
@@ -183,10 +178,17 @@ def preprocess(options):
 
     """ fitting the null model """
     if options.fit_null:
+        if options.nfile==None:
+            options.nfile = os.path.split(options.bfile)[-1]
+            warnings.warn('warning: nfile not specifed, set to %s'%options.nfile)
         print 'Fitting null model'
         assert options.pfile is not None, 'phenotype file needs to be specified'
-        cov = readCovarianceMatrixFile(options.cfile,readCov=False)
         Y = readPhenoFile(options.pfile)
+        if options.cfile==None:
+            cov = {'eval':None,'evec':None}
+            warnings.warn('warning: cfile not specifed, a one variance compoenent model will be considered')
+        else:
+            cov = readCovarianceMatrixFile(options.cfile,readCov=False)
         assert Y.shape[0]==cov['eval'].shape[0],  'dimension mismatch'
         t0 = time.time()
         fit_null(Y,cov['eval'],cov['evec'],options.nfile)
@@ -195,6 +197,9 @@ def preprocess(options):
 
     """ precomputing the windows """
     if options.precompute_windows:
+        if options.wfile==None:
+            options.wfile = os.path.split(options.bfile)[-1] + '.%d'%options.window_size
+            warnings.warn('warning: wfile not specifed, set to %s'%options.wfile)
         print 'Precomputing windows'
         t0 = time.time()
         pos = readBimFile(options.bfile)

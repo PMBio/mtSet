@@ -51,7 +51,11 @@ def analyze(options):
 
     # load data
     print 'import data'
-    cov = readCovarianceMatrixFile(options.cfile,readCov=False)
+    if options.cfile==None:
+        cov = {'eval':None,'evec':None}
+        warnings.warn('warning: cfile not specifed, a one variance compoenent model will be considered')
+    else:
+        cov = readCovarianceMatrixFile(options.cfile,readCov=False)
     Y = readPhenoFile(options.pfile)
     null = readNullModelFile(options.nfile)
     wnds = readWindowsFile(options.wfile)
