@@ -68,8 +68,8 @@ def readBED(basefilename, blocksize = 1, start = 0, nSNPs = SP.inf, startpos = N
     --------------------------------------------------------------------------    
     '''
     
-    if bim is None: bim = readBIM(basefilename,usecols=(0,1))
-    if fam is None: fam = readFAM(basefilename,usecols=(0,1,2,3))
+    if bim is None: bim = readBIM(basefilename)
+    if fam is None: fam = readFAM(basefilename)
 
     
     rs = bim[:,1]

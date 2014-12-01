@@ -7,11 +7,7 @@ import pdb
 import numpy as NP
 import scipy as SP
 import scipy.linalg as LA
-
-# import LIMIX
-import limix
 import time as TIME
-
 from gp_base import GP
 
 class gp2kronSum(GP):
@@ -59,11 +55,6 @@ class gp2kronSum(GP):
         # col covars
         self.Cg = Cg
         self.Cn = Cn
-        # cache covariances
-        C  = limix.CSumCF()
-        C.addCovariance(self.Cg)
-        C.addCovariance(self.Cn)
-        self.col_cache = limix.CCovarianceFunctionCacheOld(C)
 
     def setMean(self,mean):
         """
@@ -125,6 +116,7 @@ class gp2kronSum(GP):
         """
         Update cache
         """
+        cov_params_have_changed = self.Cg.params_have_changed or self.Cn.params_have_changed
 
         if self.XX_has_changed:
             start = TIME.time()
@@ -136,7 +128,7 @@ class gp2kronSum(GP):
             smartSum(self.time,'cache_XXchanged',TIME.time()-start)
             smartSum(self.count,'cache_XXchanged',1)
         
-        if not self.col_cache.isInSync():
+        if cov_params_have_changed:
             start = TIME.time()
             """ Col SVD Bg + Noise """
             S2,U2 = LA.eigh(self.Cn.K()+self.offset*SP.eye(self.P))
@@ -150,7 +142,7 @@ class gp2kronSum(GP):
             self.mean.setColRotation(self.cache['Lc'])
 
 
-        if not self.col_cache.isInSync() or self.XX_has_changed:
+        if cov_params_have_changed or self.XX_has_changed:
             """ S """
             self.cache['s'] = SP.kron(self.cache['Scstar'],self.cache['Srstar'])+1
             self.cache['d'] = 1./self.cache['s']
@@ -164,8 +156,8 @@ class gp2kronSum(GP):
             smartSum(self.count,'cache_colSVDpRot',1)
 
         self.XX_has_changed = False
-        self.col_cache.setSync()
-
+        self.Cg.params_have_changed = False
+        self.Cn.params_have_changed = False
 
     def LML(self,params=None,*kw_args):
         """

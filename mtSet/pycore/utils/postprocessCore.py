@@ -1,6 +1,5 @@
 import sys
 sys.path.append('./../../..')
-import limix
 import os
 import subprocess
 import pdb
