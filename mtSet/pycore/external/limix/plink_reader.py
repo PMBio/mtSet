@@ -37,7 +37,7 @@ def readFAM(basefilename,usecols=None):
     return bim
 
 
-def readBED(basefilename, blocksize = 1, start = 0, nSNPs = SP.inf, startpos = None, endpos = None, order  = 'F',standardizeSNPs=False,ipos = 2,bim=None,fam=None):
+def readBED(basefilename, useMAFencoding=False,blocksize = 1, start = 0, nSNPs = SP.inf, startpos = None, endpos = None, order  = 'F',standardizeSNPs=False,ipos = 2,bim=None,fam=None):
     '''
     read [basefilename].bed,[basefilename].bim,[basefilename].fam
     --------------------------------------------------------------------------
@@ -59,6 +59,8 @@ def readBED(basefilename, blocksize = 1, start = 0, nSNPs = SP.inf, startpos = N
     ipos            : the index of the position index to use (default 2)
                         1 : genomic distance
                         2 : base-pair distance
+    useMAFencoding  : if set to one, the minor allele is encoded with 2, the major allele with 0.
+                      otherwise, the plink coding is used (default False).
     --------------------------------------------------------------------------
     Output dictionary:
     'rs'     : [S] array rs-numbers
@@ -171,6 +173,11 @@ def readBED(basefilename, blocksize = 1, start = 0, nSNPs = SP.inf, startpos = N
         bytes=SP.mod(bytes,2)
         SNPs[0::4][bytes>=1]+=1
     snps = SNPs[0:N,:]
+
+    if useMAFencoding:
+        imaf = SP.sum(snps==2,axis=0)>SP.sum(snps==0,axis=0)
+        snps[:,imaf] = 2 - snps[:,imaf]
+        
     if standardizeSNPs:
         snps = standardize(snps)
     ret = {
