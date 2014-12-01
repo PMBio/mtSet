@@ -129,12 +129,6 @@ def computeCovarianceMatrix(plink_path,bfile,cfile,sim_type='RRM'):
     else:
         computeCovarianceMatrixPython(out_dir,bfile,cfile,sim_type=sim_type)
         
-        
-        
-        
-
-    
-
 def eighCovarianceMatrix(cfile):
     """
     compute similarity matrix using plink
@@ -145,7 +139,7 @@ def eighCovarianceMatrix(cfile):
     """
     # precompute eigenvalue decomposition
     K = NP.loadtxt(cfile+'.cov')
-    S,U = LA.eigh(K)
+    S,U = LA.eigh(K); S=S[::-1]; U=U[:,::-1]
     NP.savetxt(cfile+'.cov.eval',S)
     NP.savetxt(cfile+'.cov.evec',U)
 
