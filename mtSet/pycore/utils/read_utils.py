@@ -30,16 +30,38 @@ def readCovarianceMatrixFile(cfile):
 
     return K,ids
 
-def readPhenoFile(pfile):
+
+def readCovariatesFile(fFile):
+    """"
+    reading in covariate file
+
+    cfile   file containing the fixed effects as NxP matrix
+            (N=number of samples, P=number of covariates)
+    """
+    assert os.path.exists(fFile), '%s is missing.'%fFile
+    F = SP.loadtxt(fFile)
+    return F
+
+
+def readPhenoFile(pfile,idx=None):
     """"
     reading in phenotype file
 
     pfile   root of the file containing the phenotypes as NxP matrix
             (N=number of samples, P=number of traits)
     """
+
+    usecols = None
+    if idx!=None:
+        """ different traits are comma-seperated """
+        usecols = [int(x) for x in idx.split(',')]
+        
     phenoFile = pfile+'.phe'
     assert os.path.exists(phenoFile), '%s is missing.'%phenoFile
-    Y = SP.loadtxt(phenoFile)
+
+    Y = SP.loadtxt(phenoFile,usecols=usecols)
+    
+    if (usecols is not None) and (len(usecols)==1): Y = Y[:,SP.newaxis]
     return Y
 
 def readNullModelFile(nfile):
@@ -51,7 +73,8 @@ def readNullModelFile(nfile):
     nullmod_file = nfile+'.p0'
     assert os.path.exists(nullmod_file), '%s is missing.'%nullmod_file
     params = SP.loadtxt(nullmod_file)
-    rv = {'params0_g':params[0,:],'params0_n':params[1,:]}
+
+    rv = {'params0_g':params[0],'params0_n':params[1]}
     return rv
 
 def readWindowsFile(wfile):

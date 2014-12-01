@@ -13,7 +13,8 @@ import time
 import mtSet.pycore.modules.multiTraitSetTest as MTST
 from mtSet.pycore.utils.read_utils import readBimFile
 from mtSet.pycore.utils.read_utils import readCovarianceMatrixFile
-from mtSet.pycore.utils.read_utils import readPhenoFile 
+from mtSet.pycore.utils.read_utils import readPhenoFile
+from mtSet.pycore.utils.read_utils import readCovariatesFile 
 from mtSet.pycore.utils.splitter_bed import splitGeno
 import mtSet.pycore.external.limix.plink_reader as plink_reader
 import scipy as SP
@@ -134,19 +135,22 @@ def computeCovarianceMatrix(plink_path,bfile,cfile,sim_type='RRM'):
 
     
 
-def fit_null(Y,K,nfile):
+def fit_null(Y,F,K,nfile):
     """
     fit null model
 
     Y   NxP phenotype matrix
+    F   NxF fixed effects matrix
     K   NxN phenotype matrix
     """
-    mtSet = MTST.MultiTraitSetTest(Y,K)
+    mtSet = MTST.MultiTraitSetTest(Y,K,F=F)
     RV = mtSet.fitNull(cache=False)
     params = NP.array([RV['params0_g'],RV['params0_n']])
     NP.savetxt(nfile+'.p0',params)
     NP.savetxt(nfile+'.cg0',RV['Cg'])
     NP.savetxt(nfile+'.cn0',RV['Cn'])
+    if F!=None: NP.savetxt(nfile+'.f0',RV['params_mean'])
+    
 
 def preprocess(options):
     assert options.bfile!=None, 'Please specify a bfile.'
@@ -170,10 +174,14 @@ def preprocess(options):
         print 'Fitting null model'
         assert options.pfile is not None, 'phenotype file needs to be specified'
         K,ids = readCovarianceMatrixFile(options.cfile)
-        Y = readPhenoFile(options.pfile)
-        assert Y.shape[0]==K.shape[0],  'dimension mismatch'
+        F = None
+        if options.ffile: F = readCovariatesFile(options.ffile)
+        Y = readPhenoFile(options.pfile,idx=options.trait_idx)
+        assert Y.shape[0]==K.shape[0],  'dimensions mismatch'
+        if F is not None: assert Y.shape[0]==F.shape[0], 'dimensions mismatch'
+            
         t0 = time.time()
-        fit_null(Y,K,options.nfile)
+        fit_null(Y,F,K,options.nfile)
         t1 = time.time()
         print '.. finished in %s seconds'%(t1-t0)
 

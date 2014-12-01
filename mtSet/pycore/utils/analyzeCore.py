@@ -12,20 +12,18 @@ import mtSet.pycore.modules.multiTraitSetTest as MTST
 from mtSet.pycore.utils.read_utils import readNullModelFile
 from mtSet.pycore.utils.read_utils import readWindowsFile
 from mtSet.pycore.utils.read_utils import readCovarianceMatrixFile
+from mtSet.pycore.utils.read_utils import readCovariatesFile
 from mtSet.pycore.utils.read_utils import readPhenoFile
 from mtSet.pycore.external.limix import plink_reader
  
-def scan(bfile,Y,K,params0,wnds,minSnps,i0,i1,perm_i,outfile):
+def scan(bfile,Y,K,params0,wnds,minSnps,i0,i1,perm_i,outfile,F):
 
     if perm_i is not None:
         print 'Generating permutation (permutation %d)'%perm_i
         NP.random.seed(perm_i)
         perm = NP.random.permutation(Y.shape[0])
 
-    mtSet = MTST.MultiTraitSetTest(Y,K)
-    #mtSet.setNull(null)
-    #bed = Bed(bfile,standardizeSNPs=False)
-
+    mtSet = MTST.MultiTraitSetTest(Y,K,F=F)
     bim = plink_reader.readBIM(bfile,usecols=(0,1,2,3))
     fam = plink_reader.readFAM(bfile,usecols=(0,1))
    
@@ -50,11 +48,19 @@ def analyze(options):
 
     # load data
     print 'import data'
+
+    
     K,ids = readCovarianceMatrixFile(options.cfile)
-    Y = readPhenoFile(options.pfile)
+    Y = readPhenoFile(options.pfile,idx=options.trait_idx)
     null = readNullModelFile(options.nfile)
     wnds = readWindowsFile(options.wfile)
 
+    F = None
+    if options.ffile: F = readCovariatesFile(options.ffile)
+    assert Y.shape[0]==K.shape[0],  'dimensions mismatch'
+    if F is not None: assert Y.shape[0]==F.shape[0], 'dimensions mismatch'
+
+            
     if options.i0 is None: options.i0 = 1
     if options.i1 is None: options.i1 = wnds.shape[0]
 
@@ -73,7 +79,7 @@ def analyze(options):
     # analysis
     print 'fitting model'
     t0 = time.time()
-    scan(options.bfile,Y,K,null,wnds,options.minSnps,options.i0,options.i1,options.perm_i,outfile)
+    scan(options.bfile,Y,K,null,wnds,options.minSnps,options.i0,options.i1,options.perm_i,outfile,F)
     t1 = time.time()
     print '... finished in %s seconds'%(t1-t0)
 

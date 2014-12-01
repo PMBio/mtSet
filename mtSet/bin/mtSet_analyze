@@ -17,6 +17,7 @@ if __name__ == "__main__":
     parser.add_option("--pfile", dest='pfile', type=str, default=None)
     parser.add_option("--nfile", dest='nfile', type=str, default=None)
     parser.add_option("--wfile", dest='wfile', type=str, default=None)
+    parser.add_option("--ffile", dest='ffile', type=str, default=None)
     parser.add_option("--outdir", dest='outdir', type=str, default=None)
     parser.add_option("--trait_idx",dest='trait_idx',type=str, default=None)
 
