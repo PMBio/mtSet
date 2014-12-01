@@ -141,8 +141,8 @@ def eighCovarianceMatrix(cfile):
     # precompute eigenvalue decomposition
     K = NP.loadtxt(cfile+'.cov')
     S,U = LA.eigh(K); S=S[::-1]; U=U[:,::-1]
-    NP.savetxt(cfile+'.cov.eval',S)
-    NP.savetxt(cfile+'.cov.evec',U)
+    NP.savetxt(cfile+'.cov.eval',S,fmt='%.6f')
+    NP.savetxt(cfile+'.cov.evec',U,fmt='%.6f')
 
 
 def fit_null(Y,S_XX,U_XX,nfile,F):
