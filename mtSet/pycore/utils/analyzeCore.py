@@ -16,6 +16,7 @@ from mtSet.pycore.utils.read_utils import readCovariatesFile
 from mtSet.pycore.utils.read_utils import readPhenoFile
 from mtSet.pycore.external.limix import plink_reader
 import scipy as SP
+import warnings
 
 def scan(bfile,Y,cov,null,wnds,minSnps,i0,i1,perm_i,resfile,F):
 
@@ -52,7 +53,7 @@ def analyze(options):
 
     # load data
     print 'import data'
-    if options.cfile==None:
+    if options.cfile is None:
         cov = {'eval':None,'evec':None}
         warnings.warn('warning: cfile not specifed, a one variance compoenent model will be considered')
     else:

@@ -230,7 +230,7 @@ class MultiTraitSetTest():
         RV = {}
         if self.P>1:
             RV['Cr']  = self.getCr()
-            if self.XX is not None: RV['Cg']  = self.getCg()
+            if self.bgRE: RV['Cg']  = self.getCg()
             RV['Cn']  = self.getCn()
         RV['time']  = SP.array([TIME.time()-start])
         RV['params0'] = params0

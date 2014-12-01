@@ -185,7 +185,7 @@ def preprocess(options):
     if options.fit_null:
         if options.nfile is None:
             options.nfile = os.path.split(options.bfile)[-1]
-            warnings.warn('warning: nfile not specifed, set to %s'%options.nfile)
+            warnings.warn('nfile not specifed, set to %s'%options.nfile)
         print 'Fitting null model'
         assert options.pfile is not None, 'phenotype file needs to be specified'
         # read pheno
@@ -193,7 +193,7 @@ def preprocess(options):
         # read covariance
         if options.cfile is None:
             cov = {'eval':None,'evec':None}
-            warnings.warn('warning: cfile not specifed, a one variance compoenent model will be considered')
+            warnings.warn('cfile not specifed, a one variance compoenent model will be considered')
         else:
             cov = readCovarianceMatrixFile(options.cfile,readCov=False)
             assert Y.shape[0]==cov['eval'].shape[0],  'dimension mismatch'
@@ -211,7 +211,7 @@ def preprocess(options):
     if options.precompute_windows:
         if options.wfile==None:
             options.wfile = os.path.split(options.bfile)[-1] + '.%d'%options.window_size
-            warnings.warn('warning: wfile not specifed, set to %s'%options.wfile)
+            warnings.warn('wfile not specifed, set to %s'%options.wfile)
         print 'Precomputing windows'
         t0 = time.time()
         pos = readBimFile(options.bfile)
