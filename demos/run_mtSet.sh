@@ -26,4 +26,4 @@ do
 done
 
 #postprocess
-./../mtSet/bin/mtSet_postprocess --resdir $OUTDIR --outfile $OUTFILE 
+./../mtSet/bin/mtSet_postprocess --resdir $RESDIR --outfile $OUTFILE 
