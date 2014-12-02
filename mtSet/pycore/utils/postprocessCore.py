@@ -10,7 +10,18 @@ import numpy as NP
 from optparse import OptionParser
 import time
 import mtSet.pycore.modules.chi2mixture as C2M
+import mtSet.pycore.external.limix.plot as plot
+import scipy as SP
+import utils
 
+def plot_manhattan(pv,out_file):
+    import matplotlib.pylab as PLT
+    posCum = SP.arange(pv.shape[0])
+    plot.plot_manhattan(posCum,pv[:,0],alphaNS=1.0,alphaS=1.0)
+    print out_file
+    PLT.savefig(out_file)
+
+        
 def postprocess(options):
     """ perform parametric fit of the test statistics and provide permutation and test pvalues """
 
@@ -56,3 +67,9 @@ def postprocess(options):
     perm_file = out_file+'.test'
     RV_test = NP.hstack([RV_test,pv])
     NP.savetxt(perm_file,RV_test,delimiter='\t',fmt='%d %d %d %d %d %d %.6e %.6e')
+
+    if options.manhattan:
+        manhattan_file = out_file+'.manhattan.jpg'
+        plot_manhattan(pv,manhattan_file)
+        
+        

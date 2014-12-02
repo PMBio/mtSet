@@ -22,6 +22,7 @@ def genPhenoCube(sim,Xr,vTotR=4e-3,nCausalR=10,pCommonR=0.8,vTotBg=0.4,pHidd=0.6
         'vTotBg':vTotBg,'vCommonBg':vCommonBg,'pCausalBg':1.,'use_XX':True,
         'vTotH':vTotH,'vCommonH':vCommonH,'nHidden':10,
         'vTotN':vTotN,'vCommonN':0.}
+
     Y,info = sim.genPheno(Xr,**all_settings)
     return Y,info
 
@@ -50,7 +51,7 @@ def simPheno(options):
    
     simulator = sim.CSimulator(bfile=options.bfile,XX=XX,P=options.nTraits)
     Xr,region = simulator.getRegion(chrom_i=options.chrom,size=options.windowSize,min_nSNPs=options.nCausalR,pos_min=options.pos_min,pos_max=options.pos_max)
-    
+ 
     Y,info    = genPhenoCube(simulator,Xr,vTotR=options.vTotR,nCausalR=options.nCausalR,pCommonR=options.pCommonR,vTotBg=options.vTotBg,pHidd=options.pHidden,pCommon=options.pCommon)
 
     print 'exporting pheno file'

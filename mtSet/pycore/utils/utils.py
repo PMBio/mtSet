@@ -40,8 +40,10 @@ def getCumPos(chrom,pos):
     x = 0
     for chrom_i in range(1,n_chroms+1):
         I = chrom==chrom_i
-        pos[I]+=x
-        x=pos[I].max()
+
+        if I.any():
+            pos[I]+=x
+            x=pos[I].max()
     return pos
 
 def getChromBounds(chrom,posCum):

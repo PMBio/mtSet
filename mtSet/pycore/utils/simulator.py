@@ -89,9 +89,6 @@ class CSimulator:
         nSNPs  = cis.sum()
         rv = plink_reader.readBED(self.bfile,useMAFencoding=True,start = start, nSNPs = nSNPs,bim=bim)
         Xr = rv['snps']
-
-        
-        
         return Xr, region
 
 
@@ -214,6 +211,8 @@ class CSimulator:
         if a==None: a = SP.randn(self.P)
         if c==None: c = SP.randn(self.P)
 
+
+        XX += 1e-3 * SP.eye(XX.shape[0])
         L = LA.cholesky(XX,lower=True)
         # common effect
         R = SP.randn(self.N,self.P)
@@ -280,11 +279,11 @@ class CSimulator:
         vCommonH=0.1,vTotH=0.2,nHidden=10,
         vCommonN=0.,vTotN=0.3,standardize=True):
 
+      
         YRc,YRi = self.genRegionTerm(Xr,vTot=vTotR,nCommon=nCommonR,nCausal=nCausalR,distribution='biNormal')
         YGc,YGi = self.genBgTerm(vCommon=vCommonBg,vTot=vTotBg,pCausal=pCausalBg,XX=XX,use_XX=use_XX)
         YHc,YHi = self.genHidden(vCommon=vCommonH,vTot=vTotH,nHidden=nHidden)
-        YNc,YNi = self.genNoise(vCommon=vCommonN,vTot=vTotN)
-
+        YNc,YNi = self.genNoise(vCommon=vCommonN,vTot=vTotN)        
         Y = YRc+YRi+YGc+YGi+YHc+YHi+YNc+YNi
 
         if standardize:
