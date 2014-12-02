@@ -85,6 +85,7 @@ class gp2kronSum(GP):
         if SUnotNone:
             self.cache['Srstar'] = S_XX
             self.cache['Lr'] = U_XX.T
+            self.mean.setRowRotation(Lr=self.cache['Lr'])
             self.XX_has_changed = False
         else:
             self.XX = XX

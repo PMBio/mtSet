@@ -140,6 +140,7 @@ def eighCovarianceMatrix(cfile):
     """
     # precompute eigenvalue decomposition
     K = NP.loadtxt(cfile+'.cov')
+    K+= 1e-4*SP.eye(K.shape[0])
     S,U = LA.eigh(K); S=S[::-1]; U=U[:,::-1]
     NP.savetxt(cfile+'.cov.eval',S,fmt='%.6f')
     NP.savetxt(cfile+'.cov.evec',U,fmt='%.6f')
