@@ -26,7 +26,7 @@ if __name__ == "__main__":
     parser.add_option("--minPos",dest='pos_min',type=int, default=None)
     parser.add_option("--maxPos",dest='pos_max',type=int, default=None)
 
-    parser.add_option("--vTotR",   dest='vTotR', type=float, default=0.1)
+    parser.add_option("--vTotR",   dest='vTotR', type=float, default=0.05)
     parser.add_option("--nCausalR",dest='nCausalR', type=int,default=10)
     parser.add_option("--pCommonR",dest='pCommonR', type=float,default=0.8)
     parser.add_option("--vTotBg",  dest='vTotBg',type=float,default=0.4)

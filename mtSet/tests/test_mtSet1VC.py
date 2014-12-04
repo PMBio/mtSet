@@ -34,6 +34,7 @@ class mtSet1VC_test(unitestClass):
         optInfo = setTest.optimize(self.Xr)
         ext = {'Cr':optInfo['Cr'],
                'Cn':optInfo['Cn']}
+
         if self.write: self.saveStuff(test,ext)
         RV = self.assess(test,ext)
         self.assertTrue(RV)

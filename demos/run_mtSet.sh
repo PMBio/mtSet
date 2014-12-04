@@ -1,10 +1,10 @@
 #!/bin/bash 
-BFILE=./../data/1000G_chr22/chrom22_sub_maf0.05 #specify here bed basename
+BFILE=./../data/1000G_chr22/chrom22_sub_maf0.10 #specify here bed basename
 CFILE=./out/chrom22
 PFILE=./out/pheno
 WFILE=./out/windows
 NFILE=./out/null
-WSIZE=10000
+WSIZE=30000
 RESDIR=./out/results
 OUTFILE=./out/final
 
