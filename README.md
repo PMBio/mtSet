@@ -12,8 +12,10 @@ By Francesco Paolo Casale (casale@ebi.ac.uk), Barbara Rakitsch (rakitsch@ebi.ac.
 
 
 ## Requirements
-#### Plink 1.9
-mtSet requires [Plink 1.9](https://www.cog-genomics.org/plink2), which is used to calculate the genetic relatedness matrix from bed genotype files.
+
+mtSet requires Python 2.7 with scipy, h5py, numpy, pylab.
+
+mtSet can use [Plink 1.9](https://www.cog-genomics.org/plink2) to calculate the genetic relatedness matrix from bed genotype files. If Plink 1.9 is not found, a python implementation is used. We strongly recommend using Plink 1.9 for large genotype datasets.
 
 ## Installation
 
