@@ -12,8 +12,8 @@ By Francesco Paolo Casale (casale@ebi.ac.uk), Barbara Rakitsch (rakitsch@ebi.ac.
 
 
 ## Requirements
-#### Plink
-mtSet also requires [Plink 1.9](https://www.cog-genomics.org/plink2), which is used to calculate the genetic relatedness matrix from bed genotype files.
+#### Plink 1.9
+mtSet requires [Plink 1.9](https://www.cog-genomics.org/plink2), which is used to calculate the genetic relatedness matrix from bed genotype files.
 
 ## Installation
 
