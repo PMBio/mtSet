@@ -1,5 +1,5 @@
 #!/bin/bash 
-BFILE=./../data/1000G_chr22/chrom22_sub_maf0.10 #specify here bed basename
+BFILE=./../data/1000G_chr22/chrom22_subsample20_maf0.10 #specify here bed basename
 CFILE=./out/chrom22
 PFILE=./out/pheno
 WFILE=./out/windows
@@ -10,7 +10,7 @@ OUTFILE=./out/final
 
 # Preprocessing and generation
 ./../mtSet/bin/mtSet_preprocess --compute_covariance --bfile $BFILE --cfile $CFILE 
-./../mtSet/bin/mtSet_simPheno --bfile $BFILE --cfile $CFILE --pfile $PFILE --chrom 22 --minPos 1660000  --maxPos 16650000
+./../mtSet/bin/mtSet_simPheno --bfile $BFILE --cfile $CFILE --pfile $PFILE --chrom 22 --minPos 1640000  --maxPos 17550000
 
 ./../mtSet/bin/mtSet_preprocess --precompute_windows --fit_null --bfile $BFILE --cfile $CFILE --pfile $PFILE --wfile $WFILE --nfile $NFILE --window_size $WSIZE --plot_windows
 

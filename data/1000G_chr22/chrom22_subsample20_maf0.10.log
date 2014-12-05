@@ -1,0 +1,24 @@
+PLINK v1.90b2o 64-bit (25 Nov 2014)
+11 arguments: --bfile 1000G_chr22/chrom22 --keep subsample20.txt --maf 0.10 --make-bed --out 1000G_chr22/chrom22_subsample20_maf0.10 --thin 0.7
+Hostname: 2cf0ee25939a
+Working directory: /Users/rakitsch/Documents/Work/mtSet/data
+Start time: Fri Dec  5 10:13:28 2014
+
+Random number seed: 1417774408
+8192 MB RAM detected; reserving 4096 MB for main workspace.
+475371 variants loaded from .bim file.
+1092 people (0 males, 0 females, 1092 ambiguous) loaded from .fam.
+Ambiguous sex IDs written to 1000G_chr22/chrom22_subsample20_maf0.10.nosex .
+--thin: 142642 variants removed (332729 remaining).
+--keep: 274 people remaining.
+Using 1 thread (no multithreaded calculations invoked).
+Before main variant filters, 274 founders and 0 nonfounders present.
+Calculating allele frequencies... done.
+283721 variants removed due to MAF threshold(s) (--maf/--max-maf).
+49008 variants and 274 people pass filters and QC.
+Note: No phenotypes present.
+--make-bed to 1000G_chr22/chrom22_subsample20_maf0.10.bed +
+1000G_chr22/chrom22_subsample20_maf0.10.bim +
+1000G_chr22/chrom22_subsample20_maf0.10.fam ... done.
+
+End time: Fri Dec  5 10:13:29 2014
