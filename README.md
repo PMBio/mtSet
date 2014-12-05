@@ -2,7 +2,7 @@ mtSet
 ======
 
 Set tests are a powerful approach for genome-wide association testing between groups of genetic variants and individual quantitative traits.
-mtSet is an implementation of efficient set test algorithms for joint analysis across multiple traits. mtSet can account for confounding factors such as relatedness and can be used for analysis of single traits.
+mtSet is an implementation of efficient set test algorithms for joint analysis across multiple traits. mtSet can account for confounding factors such as relatedness and can be used for analysis of single and multiple traits.
 
 The implementation is in Python and builds on the Gaussian process toolbox in pygp (https://github.com/PMBio/pygp) and the linear mixed model library LIMIX (https://pypi.python.org/pypi/limix).
 
