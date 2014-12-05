@@ -23,9 +23,7 @@ The repository can be cloned using git
 
     git clone https://github.com/PMBio/mtSet.git
     
-mtSet can be run from the command line using the scripts in _mtSet_/_bin_ in a portable manner as shown in the [tutorial](https://github.com/PMBio/mtSet/wiki/Tutorial).
-
-mtSet can be also installed by using the _setup.py_ file.
+mtSet can be run from the command line using the scripts in _mtSet_/_bin_ as standalone software as shown in the [tutorial](https://github.com/PMBio/mtSet/wiki/Tutorial).
 
 ## Operating system
 
