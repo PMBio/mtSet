@@ -11,12 +11,13 @@ import scipy.linalg as LA
 import numpy.linalg as NLA
 import sys
 import time as TIME
+import warnings
 
 from gp_base import GP
 
 class gp2kronSumLR(GP):
  
-    def __init__(self,Y,Cn,F=None,rank=1,Xr=None,offset=1e-4):
+    def __init__(self,Y,Cn,F=None,rank=1,Xr=None,offset=1e-4,tol=1e-6):
         """
         Y:      Phenotype matrix
         Cn:     LIMIX trait-to-trait covariance for noise
@@ -29,6 +30,8 @@ class gp2kronSumLR(GP):
         self.setFixedEffect(F)
         # colCovariances
         self.setColCovars(rank,Cn)
+        # set tol
+        self.tol = tol
         # row covars
         if Xr is not None:    self.set_Xr(Xr)
         #offset for trait covariance matrices
@@ -91,8 +94,15 @@ class gp2kronSumLR(GP):
         """
         set SNPs in the region
         """
+        Ug,Sgh,Vg = NLA.svd(Xr,full_matrices=0)
+        I = Sgh<self.tol
+        if I.any():
+            warnings.warn('Xr has dependent columns, dimensionality reduced')
+            Sgh = Sgh[~I]
+            Ug = Ug[:,~I]
+            Xr = Ug*Sgh[SP.newaxis,:]
         self.Xr = Xr
-        self.S  = Xr.shape[1]
+        self.S = self.Xr.shape[1]
         self.Xr_has_changed = True
 
     def getParams(self):
@@ -131,7 +141,7 @@ class gp2kronSumLR(GP):
         if self.Xr_has_changed:
             start = TIME.time()
             """ Row SVD on small matrix """
-            Ug,Sgh,Vg = LA.svd(self.Xr,full_matrices=0)
+            Ug,Sgh,Vg = NLA.svd(self.Xr,full_matrices=0)
             self.cache['Sg'] = Sgh**2
             self.cache['Wr'] = Ug.T
             self.cache['Vg'] = Vg
@@ -144,7 +154,7 @@ class gp2kronSumLR(GP):
             self.cache['Lc'] = (self.cache['Sn']**(-0.5))[:,SP.newaxis]*Un.T
             E = SP.reshape(self.Cr.getParams(),(self.P,self.rank),order='F')
             Estar = SP.dot(self.cache['Lc'],E)
-            Ue,Seh,Ve = LA.svd(Estar,full_matrices=0)
+            Ue,Seh,Ve = NLA.svd(Estar,full_matrices=0)
             self.cache['Se'] = Seh**2
             self.cache['Wc'] = Ue.T
 
