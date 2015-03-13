@@ -18,7 +18,7 @@ if __name__ == "__main__":
 
     # generate data
     h2 = 0.3
-    N = 1000; P = 4; S = 1000
+    N = 2000; P = 4; S = 1000
     X = 1.*(SP.rand(N,S)<0.2)
     beta = SP.randn(S,P)
     Yg = SP.dot(X,beta); Yg*=SP.sqrt(h2/Yg.var(0).mean())
@@ -42,7 +42,7 @@ if __name__ == "__main__":
     Cg = limix.CFreeFormCF(P)
     Cn = limix.CFreeFormCF(P)
     
-    if 1:
+    if 0:
         # generate parameters
         params = {}
         params['Cg']   = SP.randn(int(0.5*P*(P+1)))
@@ -67,9 +67,12 @@ if __name__ == "__main__":
         print "check gradient with gp3kronSum"
         gp = gp3kronSum(mean,Cg,Cn,XX,Xr=Xr)
         gp.setParams(params)
+        gp.LMLgrad()
         gp.checkGradient()
         print "test optimization"
         conv,info = OPT.opt_hyper(gp,params,factr=1e3)
+        ipdb.set_trace()
+        m,cov,M,S = gp.getPosteriorSnpWeights(matrix=True)
         print conv
         ipdb.set_trace()
 

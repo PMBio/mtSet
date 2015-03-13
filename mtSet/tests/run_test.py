@@ -45,6 +45,7 @@ class unitestClass(unittest.TestCase):
         setTest = MTST.MultiTraitSetTest(self.Y,S_XX=S,U_XX=U)
         nullMTInfo = setTest.fitNull(cache=False)
         ext = {'Cg':nullMTInfo['Cg'],'Cn':nullMTInfo['Cn']}
+        if self.write: self.saveStuff(fbasename,ext)
         RV = self.assess(fbasename,ext)
         self.assertTrue(RV)
 
@@ -55,7 +56,7 @@ class unitestClass(unittest.TestCase):
         ext = {'Cr':optInfo['Cr'],
                'Cg':optInfo['Cg'],
                'Cn':optInfo['Cn']}
-        if self.write: self.saveStuff(fbasename)
+        if self.write: self.saveStuff(fbasename,ext)
         RV = self.assess(fbasename,ext)
         self.assertTrue(RV)
 
@@ -66,7 +67,7 @@ class unitestClass(unittest.TestCase):
         ext = {'Cr':optInfo['Cr'],
                'Cg':optInfo['Cg'],
                'Cn':optInfo['Cn']}
-        if self.write: self.saveStuff(fbasename)
+        if self.write: self.saveStuff(fbasename,ext)
         RV = self.assess(fbasename,ext)
         self.assertTrue(RV)
 
@@ -81,27 +82,26 @@ class unitestClass(unittest.TestCase):
         RV = self.assess(fbasename,ext)
         self.assertTrue(RV)
 
-    def test_mtSet1VCnull_base(self):
-        fbasename = 'mtSet1VCnull_base'
+    def test_mtSetPCnull_base(self):
+        fbasename = 'mtSetPCnull_base'
         setTest = MTST.MultiTraitSetTest(self.Y,XX=None)
+        nullMTInfo = setTest.fitNull(cache=False)
+        ext = {'Cn':nullMTInfo['Cn']}
+        if self.write: self.saveStuff(fbasename,ext)
+        RV = self.assess(fbasename,ext)
+        self.assertTrue(RV)
+
+    def test_mtSetPCnull_fixed(self):
+        fbasename = 'mtSetPCnull_fixed'
+        setTest = MTST.MultiTraitSetTest(self.Y,XX=None,F=self.Xr)
         nullMTInfo = setTest.fitNull(cache=False)
         ext = {'Cg':nullMTInfo['Cg'],'Cn':nullMTInfo['Cn']}
         if self.write: self.saveStuff(fbasename,ext)
         RV = self.assess(fbasename,ext)
         self.assertTrue(RV)
 
-    def test_mtSet1VCnull_fixed(self):
-        fbasename = 'mtSet1VCnull_fixed'
-        setTest = MTST.MultiTraitSetTest(self.Y,XX=None,F=self.Xr)
-        nullMTInfo = setTest.fitNull(cache=False)
-        ext = {'Cg':nullMTInfo['Cg'],'Cn':nullMTInfo['Cn'],
-                'weights':nullMTInfo['params_mean']}
-        if self.write: self.saveStuff(fbasename,ext)
-        RV = self.assess(fbasename,ext)
-        self.assertTrue(RV)
-
-    def test_mtSet1VC_base(self):
-        fbasename = 'mtSet1VC_base'
+    def test_mtSetPC_base(self):
+        fbasename = 'mtSetPC_base'
         setTest = MTST.MultiTraitSetTest(self.Y,XX=None)
         optInfo = setTest.optimize(self.Xr)
         ext = {'Cr':optInfo['Cr'],
@@ -110,8 +110,8 @@ class unitestClass(unittest.TestCase):
         RV = self.assess(fbasename,ext)
         self.assertTrue(RV)
 
-    def test_mtSet1VC_fixed(self):
-        fbasename = 'mtSet1VC_fixed'
+    def test_mtSetPC_fixed(self):
+        fbasename = 'mtSetPC_fixed'
         setTest = MTST.MultiTraitSetTest(self.Y,XX=None,F=self.Xr[:,:2])
         optInfo = setTest.optimize(self.Xr)
         ext = {'Cr':optInfo['Cr'],

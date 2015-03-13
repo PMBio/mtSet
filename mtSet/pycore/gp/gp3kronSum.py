@@ -221,10 +221,13 @@ class gp3kronSum(GP):
             W                = SP.kron(self.cache['LAc'],self.cache['LXr'])
             self.cache['DW']  = W*self.cache['d'][:,SP.newaxis]
             self.cache['DWt'] = self.cache['DW'].reshape((self.N,self.P,self.rank*self.S),order='F')
-            B  = NP.einsum('ijk,jl->ilk',self.cache['DWt'],self.cache['LAc'])
-            B  = NP.einsum('ji,jlk->ilk',self.cache['LXr'],B)
-            B  = B.reshape((self.rank*self.S,self.rank*self.S),order='F')
-            B += SP.eye(self.rank*self.S)
+            #B  = NP.einsum('ijk,jl->ilk',self.cache['DWt'],self.cache['LAc'])
+            #B  = NP.einsum('ji,jlk->ilk',self.cache['LXr'],B)
+            B = SP.tensordot(self.cache['DWt'],self.cache['LAc'],axes=(1,0)) 
+            B = NP.transpose(B, (0, 2, 1))
+            B = SP.tensordot(self.cache['LXr'],B,axes=(0,0))
+            B = B.reshape((self.rank*self.S,self.rank*self.S),order='F')
+            B+= SP.eye(self.rank*self.S)
             smartSum(self.time,'cache_calcB',TIME.time()-start)
             smartSum(self.count,'cache_calcB',1)
 
@@ -339,8 +342,10 @@ class gp3kronSum(GP):
 
         KDW  = SP.zeros_like(self.cache['DW'])  
         if covar=='Cr':
-            _KDWt = NP.einsum('ij,ilk->jlk',self.cache['LXr'],self.cache['DWt'])
-            _KDWt = NP.einsum('ij,jlk->ilk',self.cache['LXr'],_KDWt)
+            #_KDWt = NP.einsum('ij,ilk->jlk',self.cache['LXr'],self.cache['DWt'])
+            #_KDWt = NP.einsum('ij,jlk->ilk',self.cache['LXr'],_KDWt)
+            _KDWt = NP.tensordot(self.cache['LXr'],self.cache['DWt'],axes=(0,0))
+            _KDWt = NP.tensordot(self.cache['LXr'],_KDWt,axes=(1,0))
             _KDLYpDLXBiz = SP.dot(self.cache['LXr'].T,self.cache['DLYpDLXBiz'])
             _KDLYpDLXBiz = SP.dot(self.cache['LXr'],_KDLYpDLXBiz)
             LRLdiag = (self.cache['LXr']**2).sum(1)
@@ -374,14 +379,19 @@ class gp3kronSum(GP):
             smartSum(self.time,'lmlgrad_trace1_%s'%covar,TIME.time()-start)
             smartSum(self.count,'lmlgrad_trace1_%s'%covar,1)
             start = TIME.time()
-            KDWt  = NP.einsum('ijk,jl->ilk',_KDWt,LCL)
+            #KDWt  = NP.einsum('ijk,jl->ilk',_KDWt,LCL)
+            KDWt = NP.tensordot(_KDWt,LCL,axes=(1,0))
             smartSum(self.time,'lmlgrad_trace2_cKDW_%s'%covar,TIME.time()-start)
             smartSum(self.count,'lmlgrad_trace2_cKDW_%s'%covar,1)
             
             start = TIME.time()
-            DKDWt = NP.einsum('ij,ijk->ijk',self.cache['D'],KDWt)
-            WDKDWt = NP.einsum('ijk,jl->ilk',DKDWt, self.cache['LAc'])
-            WDKDWt = NP.einsum('ij,ilk->jlk',self.cache['LXr'],WDKDWt)
+            #DKDWt = NP.einsum('ij,ijk->ijk',self.cache['D'],KDWt)
+            #WDKDWt = NP.einsum('ijk,jl->ilk',DKDWt, self.cache['LAc'])
+            #WDKDWt = NP.einsum('ij,ilk->jlk',self.cache['LXr'],WDKDWt)
+            DKDWt = self.cache['D'][:,SP.newaxis,:]*KDWt
+            WDKDWt = NP.tensordot(DKDWt,self.cache['LAc'],axes=(2,0))
+            WDKDWt = NP.tensordot(self.cache['LXr'],WDKDWt,axes=(0,0))
+            WDKDWt = NP.transpose(WDKDWt,(0,2,1))
             WDKDW  = WDKDWt.reshape((self.rank*self.S,self.rank*self.S),order='F')
             smartSum(self.time,'lmlgrad_trace2_WDKDW_%s'%covar,TIME.time()-start)
             smartSum(self.count,'lmlgrad_trace2_WDKDW_%s'%covar,1)
@@ -449,6 +459,100 @@ class gp3kronSum(GP):
 
         return RV
 
+    def predict(self,terms=None):
+        if terms is None:
+            terms = ['Cr','Cg']
+
+        self._update_cache()
+        Kiy = SP.dot(self.cache['Lr'].T,SP.dot(self.cache['DLYpDLXBiz'],self.cache['Lc']))
+
+        RV = SP.zeros((self.N,self.P))
+        for term_i in terms: 
+            if term_i=='Cr':
+                C = self.Cr.K()
+                RKiy = SP.dot(self.Xr,SP.dot(self.Xr.T,Kiy))
+                RV += SP.dot(RKiy,C)
+            elif term_i=='Cg':
+                C = self.Cg.K()
+                RKiy = SP.dot(self.XX,Kiy)
+                RV += SP.dot(RKiy,C)
+            elif term_i=='Cn':
+                C = self.Cn.K()
+                RV += SP.dot(Kiy,C)
+
+        return RV
+
+    def simulate(self,standardize=True):
+        self._update_cache()
+        RV = SP.zeros((self.N,self.P))
+        # region
+        Z = SP.randn(self.S,self.P)
+        Sc,Uc = LA.eigh(self.Cr.K())
+        Sc[Sc<1e-9] = 0
+        USh_c = Uc*Sc[SP.newaxis,:]**0.5 
+        RV += SP.dot(SP.dot(self.Xr,Z),USh_c.T)
+        # background
+        Z = SP.randn(self.N,self.P)
+        USh_r = self.cache['Lr'].T*self.cache['Srstar'][SP.newaxis,:]**0.5
+        Sc,Uc = LA.eigh(self.Cg.K())
+        Sc[Sc<1e-9] = 0
+        USh_c = Uc*Sc[SP.newaxis,:]**0.5
+        RV += SP.dot(SP.dot(USh_r,Z),USh_c.T)
+        # noise
+        Z = SP.randn(self.N,self.P)
+        Sc,Uc = LA.eigh(self.Cn.K())
+        Sc[Sc<1e-9] = 0
+        USh_c = Uc*Sc[SP.newaxis,:]**0.5 
+        RV += SP.dot(Z,USh_c.T)
+        # standardize
+        if standardize:
+            RV-=RV.mean(0)
+            RV/=RV.std(0) 
+        return RV
+
+    def getPosteriorFactorWeights(self,debug=False):
+        """
+        get posterior weights on low-rank genetic factors 
+        """
+        self._update_cache()
+
+        F = self.cache['A'].shape[1] * self.Xr.shape[1]
+        W   = SP.kron(self.cache['LAc'],self.cache['LXr'])
+        Sigma = LA.inv(SP.eye(F) + SP.dot(W.T,self.cache['DW']))
+        mean  = SP.dot(Sigma,self.cache['z'])
+
+        if debug:
+            assert self.N*self.P<=2000, 'N*P>2000!'
+            Cr = self.Cr.K()
+            Cn = self.Cn.K()
+            Cg = self.Cg.K()
+            y  = SP.reshape(self.Y,(self.N*self.P), order='F')
+            _Sigma = LA.inv(SP.eye(F) + SP.dot(SP.kron(self.cache['A'].T,self.Xr.T),LA.solve(SP.kron(Cg,self.XX) + SP.kron(Cn,SP.eye(self.N)),SP.kron(self.cache['A'],self.Xr))))
+            _mean  = SP.dot(Sigma,SP.dot(SP.kron(self.cache['A'].T,self.Xr.T),LA.solve(SP.kron(Cg,self.XX) + SP.kron(Cn,SP.eye(self.N)),y)))
+
+            assert SP.allclose(_Sigma,Sigma,rtol=1e-3,atol=1e-5), 'ouch'
+            assert SP.allclose(_mean,mean,rtol=1e-3,atol=1e-5), 'ouch'
+
+        return mean,Sigma
+
+    def getPosteriorSnpWeights(self,matrix=False):
+        """
+        get posterior on the number of Snps
+        """
+        meanF, SigmaF = self.getPosteriorFactorWeights()
+        V = SP.kron(self.cache['A'],SP.eye(self.Xr.shape[1]))
+        mean = SP.dot(V,meanF)
+        Sigma = SP.dot(V,SP.dot(SigmaF,V.T))
+        if matrix:
+            M = SP.reshape(mean,(self.S,self.P),order='F')
+            S = SP.sqrt(Sigma.diagonal()).reshape((self.S,self.P),order='F')
+            return mean, Sigma, M, S
+        else:
+            return mean, Sigma
+        
+        
+                
+    
 
 if 0:
 

@@ -124,7 +124,7 @@ def opt_hyper(gpr,hyperparams,Ifilter=None,bounds=None,opts={},*args,**kw_args):
 
     
     x = X0.copy()[Ifilter_x]
-    RV = optimize(f,x,maxfun=int(max_iter),pgtol=pgtol,bounds=bounds,**kw_args)
+    RV = optimize(f,x,maxiter=int(max_iter),pgtol=pgtol,bounds=bounds,**kw_args)
     #RVopt = optimize(f,x,messages=True,maxfun=int(max_iter),pgtol=pgtol,bounds=bounds)
     #LG.info('%s'%OPT.tnc.RCSTRINGS[RVopt[2]])
     #LG.info('Optimization is converged at iteration %d'%RVopt[1])

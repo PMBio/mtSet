@@ -198,22 +198,24 @@ class GP(object):
         """ utility function to check the gradient of the gp """
         grad_an = self.LMLgrad()
         grad_num = {}
+        params0 = self.params.copy()
         for key in self.params.keys():
-            paramsL = self.params.copy()
-            paramsR = self.params.copy()
+            paramsL = params0.copy()
+            paramsR = params0.copy()
             grad_num[key] = SP.zeros_like(self.params[key])
             e = SP.zeros(self.params[key].shape[0])
             for i in range(self.params[key].shape[0]):
                 e[i] = 1
-                paramsL[key]=self.params[key]-h*e
-                paramsR[key]=self.params[key]+h*e
+                paramsL[key]=params0[key]-h*e
+                paramsR[key]=params0[key]+h*e
                 lml_L = self.LML(paramsL)
                 lml_R = self.LML(paramsR)
                 grad_num[key][i] = (lml_R-lml_L)/(2*h)
                 e[i] = 0
             if verbose:
                 print '%s:'%key
-                print abs((grad_an[key]-grad_num[key])/grad_an[key])
+                print abs(grad_an[key]-grad_num[key])
                 print ''
+        self.setParams(params0)
 
 
