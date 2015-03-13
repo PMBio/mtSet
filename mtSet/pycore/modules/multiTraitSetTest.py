@@ -6,7 +6,7 @@ from mtSet.pycore.utils.fit_utils import fitPairwiseModel
 
 # core
 from mtSet.pycore.gp import gp3kronSum
-from mtSet.pycore.gp import gp2kronSumSvd
+from mtSet.pycore.gp import gp2kronSumLR
 from mtSet.pycore.gp import gp2kronSum
 from mtSet.pycore.mean import mean
 import mtSet.pycore.covariance as covariance
@@ -40,16 +40,13 @@ class MultiTraitSetTest():
         # assert
         assert Y is not None, 'MultiTraitSetTest:: set Y'
 
+        #init fixed mean term
+        self._initMean(Y,F=F)
         # data
-        self.Y  = Y
         self.set_XX(XX,S_XX,U_XX)
-        #dimensions
-        self.N,self.P = Y.shape
         #traitID
         if traitID is None: traitID = SP.array(['trait%d'%(p+1) for p in range(self.P)])
         self.setTraitID(traitID)
-        #init fixed mean term
-        self._initMean(Y,F=F)
         #init covariance matrices and gp
         self._initGP(colCovarType,rank_r,rank_g,rank_n)
         # null model params
@@ -81,15 +78,18 @@ class MultiTraitSetTest():
         """
         initialize the mean term
         Args:
-            F:    list of sample designs for fixed effects (F[i] is NxK_i matrix)
+            F:    sample design of the fixed effect
         """
-        if F is None:           F = []
-        elif (type(F)!=list):   F = [F]
+        #dimensions
+        self.N,self.P = Y.shape
+        #get F and Y
         self.F=F
+        self.Y=Y
+        # build mean
         self.mean = mean(Y)
-        A = SP.eye(self.P)
-        for i in range(len(F)):
-            self.mean.addFixedEffect(F=F[i],A=A)
+        if F is not None:
+            A = SP.eye(self.P)
+            self.mean.addFixedEffect(F=F,A=A)
 
     def _initGP(self,colCovarType,rank_r,rank_g,rank_n):
         """
@@ -118,10 +118,11 @@ class MultiTraitSetTest():
         self.Cn = self._buildTraitCovar(colCovarType,rank_n)
         XXnotNone = self.XX is not None
         SUnotNone = self.S_XX is not None and self.U_XX is not None
+        # build mean
         if self.bgRE:
             self.gp = gp3kronSum(self.mean,self.Cg,self.Cn,XX=self.XX,S_XX=self.S_XX,U_XX=self.U_XX,rank=self.rank_r)
         else:
-            self.gp = gp2kronSumSvd(self.mean,self.Cn,rank=self.rank_r)
+            self.gp = gp2kronSumLR(self.Y,self.Cn,F=self.F,rank=self.rank_r)
 
     def setTraitID(self,traitID):
         """ set trait id """
@@ -135,7 +136,7 @@ class MultiTraitSetTest():
         self.Y = Y
         self.gp.setY(self.Y)
 
-    def fitNull(self,verbose=True,cache=False,out_dir='./cache',fname=None,rewrite=False,seed=None,n_times=10):
+    def fitNull(self,verbose=True,cache=False,out_dir='./cache',fname=None,rewrite=False,seed=None,n_times=10,factr=1e3,init_method=None):
         """
         Fit null model
         """
@@ -159,17 +160,12 @@ class MultiTraitSetTest():
         else:
             start = TIME.time()
             if self.bgRE:
-                XX = self.XX
-                S_XX = self.S_XX
-                U_XX = self.U_XX
+                self.gpNull = gp2kronSum(self.mean,self.Cg,self.Cn,XX=self.XX,S_XX=self.S_XX,U_XX=self.U_XX)
             else:
-                XX   = SP.eye(self.N)
-                S_XX = SP.ones(self.N)
-                U_XX = SP.eye(self.N)
-            self.gpNull = gp2kronSum(self.mean,self.Cg,self.Cn,XX=XX,S_XX=S_XX,U_XX=U_XX)
+                self.gpNull = gp2kronSumLR(self.Y,self.Cn,Xr=SP.ones((self.N,1)),F=self.F)
             for i in range(n_times):
-                params0,Ifilter=self._initParams()
-                conv,info = OPT.opt_hyper(self.gpNull,params0,Ifilter=Ifilter,factr=1e3)
+                params0,Ifilter=self._initParams(init_method=init_method)
+                conv,info = OPT.opt_hyper(self.gpNull,params0,Ifilter=Ifilter,factr=factr)
                 if conv: break
             if not conv:    warnings.warn("not converged")
             LMLgrad = SP.concatenate([self.gpNull.LMLgrad()[key]**2 for key in self.gpNull.LMLgrad().keys()]).mean()
@@ -184,6 +180,13 @@ class MultiTraitSetTest():
             RV['time'] = SP.array([TIME.time()-start])
             RV['NLL0'] = SP.array([LML])
             RV['LMLgrad'] = SP.array([LMLgrad])
+            RV['nit'] = SP.array([info['nit']])
+            RV['funcalls'] = SP.array([info['funcalls']])
+            if self.bgRE:
+                RV['h2'] = self.gpNull.h2()
+                RV['h2_ste'] = self.gpNull.h2_ste()
+                RV['Cg_ste'] = self.gpNull.ste('Cg')
+                RV['Cn_ste'] = self.gpNull.ste('Cn')
             self.null = RV
             if cache:
                 f = h5py.File(out_file,'w')
@@ -199,7 +202,7 @@ class MultiTraitSetTest():
         """ set null model info """
         self.null = null
 
-    def optimize(self,Xr,params0=None,n_times=10,verbose=True,vmax=5):
+    def optimize(self,Xr,params0=None,n_times=10,verbose=True,vmax=5,perturb=1e-3,factr=1e3):
         """
         Optimize the model considering Xr
         """
@@ -213,16 +216,22 @@ class MultiTraitSetTest():
             else:
                 params0 = {'Cn':self.null['params0_n']}
             if 'params_mean' in self.null:
-                params0['mean'] = self.null['params_mean']
+                if self.null['params_mean'].shape[0]>0:
+                    params0['mean'] = self.null['params_mean']
+            params_was_None = True
+        else:
+            params_was_None = False
         Xr *= SP.sqrt(self.N/(Xr**2).sum())
         self.gp.set_Xr(Xr)
         self.gp.restart()
         start = TIME.time()
         for i in range(n_times):
-            params0['Cr'] = 1e-3*SP.randn(self.rank_r*self.P)
-            conv,info = OPT.opt_hyper(self.gp,params0)
+            if params_was_None:
+                params0['Cr'] = 1e-3*SP.randn(self.rank_r*self.P)
+            conv,info = OPT.opt_hyper(self.gp,params0,factr=factr)
             conv *= self.gp.Cr.K().diagonal().max()<vmax
-            if conv: break
+            conv *= self.getLMLgrad()<0.1
+            if conv or not params_was_None: break
         self.infoOpt = info
         if not conv:
             warnings.warn("not converged")
@@ -234,7 +243,8 @@ class MultiTraitSetTest():
             RV['Cn']  = self.getCn()
         RV['time']  = SP.array([TIME.time()-start])
         RV['params0'] = params0
-
+        RV['nit'] = SP.array([info['nit']])
+        RV['funcalls'] = SP.array([info['funcalls']])
         RV['var']    = self.getVariances()
         RV['conv']  = SP.array([conv])
         RV['NLLAlt']  = SP.array([self.getNLLAlt()])
@@ -278,13 +288,13 @@ class MultiTraitSetTest():
         """
         if self.P==1:
             params = self.gp.getParams()
-            if self.XX is None: keys = ['Cr','Cn']
-            else:               keys = ['Cr','Cg','Cn']
+            if self.bgRE:       keys = ['Cr','Cg','Cn']
+            else:               keys = ['Cr','Cn']
             var = SP.array([params[key][0]**2 for key in keys])
         else:
             var = []
             var.append(self.getCr().diagonal())
-            if self.XX is not None:
+            if self.bgRE:
                 var.append(self.getCg().diagonal())
             var.append(self.getCn().diagonal())
             var = SP.array(var)
@@ -356,12 +366,12 @@ class MultiTraitSetTest():
                 f.close()
         return RV
 
-    def optimizeTraitByTrait(self,Xr,verbose=True,n_times=10):
+    def optimizeTraitByTrait(self,Xr,verbose=True,n_times=10,factr=1e3):
         """ Optimize trait by trait """
         assert self.nullST is not None, 'fit null model beforehand'
         if self.mtssST is None:
             y = SP.zeros((self.N,1)) 
-            self.mtssST = MultiTraitSetTest(y,self.XX)
+            self.mtssST = MultiTraitSetTest(y,XX=self.XX,S_XX=self.S_XX,U_XX=self.U_XX,F=self.F)
         RV = {}
         self.infoOptST = {}
         self.timeProfilingST = {}
@@ -370,7 +380,7 @@ class MultiTraitSetTest():
             trait_id = self.traitID[p]
             self.mtssST._setY(y)
             self.mtssST.setNull(self.nullST[trait_id])
-            RV[trait_id] = self.mtssST.optimize(Xr,n_times=n_times)
+            RV[trait_id] = self.mtssST.optimize(Xr,n_times=n_times,factr=factr)
             self.infoOptST[trait_id] = self.mtssST.getInfoOpt()
             self.timeProfilingST[trait_id] = self.mtssST.getTimeProfiling()
         return RV
@@ -397,39 +407,34 @@ class MultiTraitSetTest():
         cov = covariance.freeform(self.P)
         return cov
 
-    def _initParams(self):
+    def _initParams(self,init_method=None):
         """ this function initializes the paramenter and Ifilter """
         if self.P==1:
-            if self.XX is None:
-                params0 = {'Cg':SP.zeros(1),'Cn':SP.ones(1)}
-                Ifilter = {'Cg':SP.zeros(1,dtype=bool),'Cn':SP.ones(1,dtype=bool)}
-            else:
+            if self.bgRE:
                 params0 = {'Cg':SP.sqrt(0.5)*SP.ones(1),'Cn':SP.sqrt(0.5)*SP.ones(1)}
                 Ifilter = None
+            else:
+                params0 = {'Cr':1e-9*SP.ones(1),'Cn':SP.ones(1)}
+                Ifilter = {'Cr':SP.zeros(1,dtype=bool),'Cn':SP.ones(1,dtype=bool)}
         else:
             if self.bgRE:
                 if self.colCovarType=='freeform':
-                    _RV = fitPairwiseModel(self.Y,XX=self.XX,S_XX=self.S_XX,U_XX=self.U_XX,verbose=False)
-                    params0_Cg = _RV['params0_Cg'] 
-                    params0_Cn = _RV['params0_Cn'] 
-                #else:
-                #    vc = VAR.VarianceDecomposition(self.Y)
-                #    _RV = vc._getH2singleTrait(self.XX)
-                #    if self.colCovarType=='lowrank_id':
-                #        cg = SP.sqrt(_RV['varg'].mean())*SP.ones(1)
-                #        cn = SP.sqrt(_RV['varn'].mean())*SP.ones(1)
-                #    else:
-                #        cg = SP.sqrt(_RV['varg'].mean())*SP.ones(self.P)
-                #        cn = SP.sqrt(_RV['varn'].mean())*SP.ones(self.P)
-                #    params0_Cg = SP.concatenate([1e-3*SP.randn(self.rank_n*self.P),cg])
-                #    params0_Cn = SP.concatenate([1e-3*SP.randn(self.rank_n*self.P),cn])
-                params0 = {'Cg':params0_Cg,'Cn':params0_Cn}
+                    if init_method=='pairwise':
+                        _RV = fitPairwiseModel(self.Y,XX=self.XX,S_XX=self.S_XX,U_XX=self.U_XX,verbose=False)
+                        params0 = {'Cg':_RV['params0_Cg'],'Cn':_RV['params0_Cn']}
+                    elif init_method=='random':
+                        params0 = {'Cg':SP.randn(self.Cg.getNumberParams()),'Cn':SP.randn(self.Cn.getNumberParams())}
+                    else:
+                        cov = 0.5*SP.cov(self.Y.T)+1e-4*SP.eye(self.P)
+                        chol = LA.cholesky(cov,lower=True)
+                        params = chol[SP.tril_indices(self.P)]
+                        params0 = {'Cg':params.copy(),'Cn':params.copy()}
                 Ifilter = None
             else:
-                cov = SP.cov(self.Y.T)
                 if self.colCovarType=='freeform':
-                    L = LA.cholesky(cov+1e-4*SP.eye(self.P))
-                    params0_Cn = SP.concatenate([L[:,p][:p+1] for p in range(self.P)])
+                    cov = SP.cov(self.Y.T)+1e-4*SP.eye(self.P)
+                    chol = LA.cholesky(cov,lower=True)
+                    params = chol[SP.tril_indices(self.P)]
                 #else:
                 #    S,U=LA.eigh(cov)
                 #    a = SP.sqrt(S[-self.rank_r:])[:,SP.newaxis]*U[:,-self.rank_r:]
@@ -438,11 +443,10 @@ class MultiTraitSetTest():
                 #    else:
                 #        c = SP.sqrt(S[:-self.rank_r].mean())*SP.ones(self.P)
                 #    params0_Cn = SP.concatenate([a.T.ravel(),c])
-                params0 = {'Cg':SP.zeros(self.Cg.getParams().shape[0]),
-                            'Cn':params0_Cn}
-                Ifilter = {'Cg':SP.zeros(self.Cg.getParams().shape[0],dtype=bool),
-                            'Cn':SP.ones(params0_Cn.shape[0],dtype=bool)}
-        if len(self.mean.F)>0:
+                params0 = {'Cr':1e-9*SP.ones(self.P),'Cn':params}
+                Ifilter = {'Cr':SP.zeros(self.P,dtype=bool),
+                            'Cn':SP.ones(params.shape[0],dtype=bool)}
+        if self.mean.F is not None and self.bgRE:
             params0['mean'] = 1e-6*SP.randn(self.mean.getParams().shape[0])
             if Ifilter is not None:
                 Ifilter['mean'] = SP.ones(self.mean.getParams().shape[0],dtype=bool)

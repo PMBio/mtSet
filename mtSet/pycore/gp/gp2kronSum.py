@@ -339,3 +339,145 @@ class gp2kronSum(GP):
         rv = SP.dot(XXstar,SP.dot(KiY,self.Cg.K()))
         return rv
 
+    def ste(self,covar):
+        """ calculates standard errors """
+        varMLE, info = self.varMLE()
+        RV = SP.zeros((self.P,self.P))
+        idx1 = 0
+        for key1 in ['Cg','Cn']:
+            for key1_p1 in range(self.P):
+                for key1_p2 in range(key1_p1,self.P):
+                    idx2 = 0
+                    for key2 in ['Cg','Cn']:
+                        for key2_p1 in range(self.P):
+                            for key2_p2 in range(key2_p1,self.P):
+                                same_cov =  key1==covar and key2==covar
+                                same_el = key1_p1==key2_p1 and key1_p2==key2_p2
+                                if same_cov and same_el:
+                                    RV[key1_p1,key1_p2] = RV[key1_p2,key1_p1] = SP.sqrt(varMLE[idx1,idx2])
+                                idx2+=1
+                    idx1+=1
+        return RV
+
+    """ getting heritabilities and standard errors """
+
+    def h2(self):
+        """ heritability """
+        self._update_cache()
+        vg = self.Cg.K().diagonal()
+        vn = self.Cn.K().diagonal()
+        rv = vg/(vg+vn)
+        return rv
+
+    def h2_ste(self):
+        """
+        standard errors over heritability
+        h2_ste = sqrt((dh2_dvg)^2 vg + (dh2_dvn)^2 vn +
+                        (dh2_dvg)(dh2_dvn) v_gn)
+        """
+        vg = self.Cg.K().diagonal() 
+        vn = self.Cn.K().diagonal() 
+        s2_vg = self.ste('Cg').diagonal()**2
+        s2_vn = self.ste('Cn').diagonal()**2
+        s_vgvn = self.sigma_vg_vn()
+        rv = vn**2/(vg+vn)**4*s2_vg
+        rv+= vg**2/(vg+vn)**4*s2_vn
+        rv+= 2*vg*vn/(vg+vn)**4*s_vgvn
+        rv = SP.sqrt(rv)
+        return rv
+
+    def sigma_vg_vn(self):
+        """ calculates standard errors """
+        varMLE, info = self.varMLE()
+        RV = SP.zeros(self.P)
+        idx1 = 0
+        for key1 in ['Cg','Cn']:
+            for key1_p1 in range(self.P):
+                for key1_p2 in range(key1_p1,self.P):
+                    idx2 = 0
+                    for key2 in ['Cg','Cn']:
+                        for key2_p1 in range(self.P):
+                            for key2_p2 in range(key2_p1,self.P):
+                                cov_cond =  key1=='Cg' and key2=='Cn'
+                                el_cond = key1_p1==key1_p2 and key2_p1==key2_p2 and key1_p1==key2_p1
+                                if cov_cond and el_cond:
+                                    RV[key1_p1] = varMLE[idx1,idx2]
+                                idx2+=1
+                    idx1+=1
+        return RV
+
+    def varMLE(self):
+        """ calculate inverse of fisher information """
+        self._update_cache()
+        Sr = {}
+        Sr['Cg'] = self.cache['Srstar']
+        Sr['Cn'] = SP.ones(self.N)
+        n_params = self.Cg.getNumberParams()+self.Cn.getNumberParams()
+        fisher = SP.zeros((n_params,n_params))
+        header = SP.zeros((n_params,n_params),dtype='|S10')
+        C1  = SP.zeros((self.P,self.P))
+        C2  = SP.zeros((self.P,self.P))
+        idx1 = 0
+        for key1 in ['Cg','Cn']:
+            for key1_p1 in range(self.P):
+                for key1_p2 in range(key1_p1,self.P):
+                    C1[key1_p1,key1_p2] = C1[key1_p2,key1_p1] = 1
+                    LCL1 = SP.dot(self.cache['Lc'],SP.dot(C1,self.cache['Lc'].T))
+                    CSr1 = SP.kron(Sr[key1][:,SP.newaxis,SP.newaxis],LCL1[SP.newaxis,:])
+                    DCSr1 = self.cache['D'][:,:,SP.newaxis]*CSr1
+                    idx2 = 0
+                    for key2 in ['Cg','Cn']:
+                        for key2_p1 in range(self.P):
+                            for key2_p2 in range(key2_p1,self.P):
+                                C2[key2_p1,key2_p2] = C2[key2_p2,key2_p1] = 1
+                                LCL2 = SP.dot(self.cache['Lc'],SP.dot(C2,self.cache['Lc'].T))
+                                CSr2 = SP.kron(Sr[key2][:,SP.newaxis,SP.newaxis],LCL2[SP.newaxis,:])
+                                DCSr2 = self.cache['D'][:,:,SP.newaxis]*CSr2
+                                fisher[idx1,idx2] = 0.5*(DCSr1*DCSr2).sum()
+                                header[idx1,idx2] = '%s%d%d_%s%d%d'%(key1,key1_p1,key1_p1,key2,key2_p1,key2_p2)
+                                C2[key2_p1,key2_p2] = C2[key2_p2,key2_p1] = 0
+                                idx2+=1
+                    C1[key1_p1,key1_p2] = C1[key1_p2,key1_p1] = 0
+                    idx1+=1
+        RV = LA.inv(fisher)
+        return RV,header
+
+    def ste_old(self,covar):
+        """ calculates standard errors """
+        self._update_cache()
+        if covar=='Cg':
+            Sr = self.cache['Srstar']
+        elif covar=='Cn':
+            Sr = SP.ones(self.N)
+        RV = SP.zeros((self.P,self.P))
+        C  = SP.zeros((self.P,self.P))
+        for p1 in range(self.P):
+            for p2 in range(p1,self.P):
+                C[p1,p2] = C[p2,p1] = 1
+                LCL = SP.dot(self.cache['Lc'],SP.dot(C,self.cache['Lc'].T))
+                #fisher information
+                CSr = SP.kron(Sr[:,SP.newaxis,SP.newaxis],LCL[SP.newaxis,:])
+                DCSr = self.cache['D'][:,:,SP.newaxis]*CSr
+                RV[p1,p2] = RV[p2,p1] = 1/SP.sqrt(0.5*(DCSr**2).sum())
+                C[p1,p2] = C[p2,p1] = 0
+        return RV
+
+    def ste_old_debug(self,covar):
+        """ debug function for standard errors """
+        self._update_cache()
+        if covar=='Cg':
+            Sr = self.cache['Srstar']
+        elif covar=='Cn':
+            Sr = SP.ones(self.N)
+        RV = SP.zeros((self.P,self.P))
+        C  = SP.zeros((self.P,self.P))
+        for p1 in range(self.P):
+            for p2 in range(p1,self.P):
+                C[p1,p2] = C[p2,p1] = 1
+                LCL = SP.dot(self.cache['Lc'],SP.dot(C,self.cache['Lc'].T))
+                #fisher information
+                DCSr = SP.dot(SP.diag(self.cache['d']),SP.kron(LCL,SP.diag(Sr)))
+                RV[p1,p2] = RV[p2,p1] = 1/SP.sqrt(0.5*(DCSr**2).sum())
+                C[p1,p2] = C[p2,p1] = 0
+        return RV
+
