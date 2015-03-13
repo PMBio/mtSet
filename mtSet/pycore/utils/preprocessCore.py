@@ -192,10 +192,10 @@ def fit_null(Y,S_XX,U_XX,nfile,F):
     
 
 def preprocess(options):
-    assert options.bfile!=None, 'Please specify a bfile.'
-
+    
     """ computing the covariance matrix """
-    if options.compute_cov or options.compute_PCs>0:
+    if options.compute_cov:
+       assert options.bfile!=None, 'Please specify a bfile.'
        assert options.cfile is not None, 'Specify covariance matrix basename'
        print 'Computing covariance matrix'
        t0 = time.time()
@@ -217,9 +217,9 @@ def preprocess(options):
        print '... finished in %s seconds'%(t1-t0)
        
 
-       
     """ fitting the null model """
     if options.fit_null:
+        assert options.bfile!=None, 'Please specify a bfile.'
         if options.nfile is None:
             options.nfile = os.path.split(options.bfile)[-1]
             warnings.warn('nfile not specifed, set to %s'%options.nfile)
@@ -246,6 +246,7 @@ def preprocess(options):
 
     """ precomputing the windows """
     if options.precompute_windows:
+        assert options.bfile!=None, 'Please specify a bfile.'
         if options.wfile==None:
             options.wfile = os.path.split(options.bfile)[-1] + '.%d'%options.window_size
             warnings.warn('wfile not specifed, set to %s'%options.wfile)
