@@ -86,6 +86,8 @@ class MultiTraitSetTest():
             if SP.any(~I):
                 warnings.warn('cols '+str(SP.where(~I)[0])+' have been removed because linearly dependent on the others')
             self.F = F[:,I]
+        else:
+            self.F = None
         #dimensions
         self.N,self.P = Y.shape
         #get F and Y
