@@ -95,6 +95,32 @@ def computeCovarianceMatrixPython(out_dir,bfile,cfile,sim_type='RRM'):
     
 
 
+
+def computeTopPrincipalComponents(k,cfile,ffile):
+    """
+    compute the first k principal components
+
+    Input:
+    k            :   number of principal components
+    plink_path   :   plink path
+    bfile        :   binary bed file (bfile.bed, bfile.bim and bfile.fam are required)
+    cfile        :   the covariance matrix will be written to cfile.cov and the corresponding identifiers
+                         to cfile.cov.id. If not specified, the covariance matrix will be written to cfile.cov and
+                         the individuals to cfile.cov.id in the current folder.
+    sim_type     :   {IBS/RRM} are supported
+    """
+
+    S = NP.loadtxt(cfile+'.cov.eval') #S
+    U = NP.loadtxt(cfile+'.cov.evec') #U
+    pcs = U[:,:k]
+
+    pcs -= pcs.mean(axis=0)
+    pcs /= pcs.std(axis=0)
+
+    NP.savetxt(ffile,pcs,fmt='%.6f')
+    
+
+
 def computeCovarianceMatrix(plink_path,bfile,cfile,sim_type='RRM'):
     """
     compute similarity matrix using plink
@@ -162,14 +188,14 @@ def fit_null(Y,S_XX,U_XX,nfile,F):
     NP.savetxt(nfile+'.nll0',RV['NLL0'])
     NP.savetxt(nfile+'.cg0',RV['Cg'])
     NP.savetxt(nfile+'.cn0',RV['Cn'])
-    if F is not None: NP.savetxt(nfile+'.f0',RV['params_mean'])
+    #if F is not None: NP.savetxt(nfile+'.f0',RV['params_mean'])
     
 
 def preprocess(options):
     assert options.bfile!=None, 'Please specify a bfile.'
 
     """ computing the covariance matrix """
-    if options.compute_cov:
+    if options.compute_cov or options.compute_PCs>0:
        assert options.cfile is not None, 'Specify covariance matrix basename'
        print 'Computing covariance matrix'
        t0 = time.time()
@@ -182,6 +208,16 @@ def preprocess(options):
        t1 = time.time()
        print '... finished in %s seconds'%(t1-t0)
 
+    """ computing principal components """
+    if options.compute_PCs>0:
+       assert options.ffile is not None, 'Specify fix effects basename for saving PCs'
+       t0 = time.time()
+       computeTopPrincipalComponents(options.compute_PCs,options.cfile,options.ffile)
+       t1 = time.time()
+       print '... finished in %s seconds'%(t1-t0)
+       
+
+       
     """ fitting the null model """
     if options.fit_null:
         if options.nfile is None:

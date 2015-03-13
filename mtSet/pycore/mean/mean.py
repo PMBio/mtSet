@@ -29,8 +29,8 @@ class mean():
 		F:	NxK sample design
 		A:	LxP sample design
 		"""
-		if F is None:	F = SP.ones((N,1))
-		if A is None:	A = SP.eye(P)
+		if F is None:	F = SP.ones((self.N,1))
+		if A is None:	A = SP.eye(self.P)
 		assert F.shape[0]==self.N, "F dimension mismatch"
 		assert A.shape[1]==self.P, "A dimension mismatch"
 		self.F.append(F); self.Fr.append(SP.zeros_like(F))

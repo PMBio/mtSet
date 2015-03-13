@@ -17,8 +17,8 @@ import utils
 def plot_manhattan(pv,out_file):
     import matplotlib.pylab as PLT
     posCum = SP.arange(pv.shape[0])
-    plot.plot_manhattan(posCum,pv[:,0],alphaNS=1.0,alphaS=1.0)
-    print out_file
+    idx=~SP.isnan(pv[:,0])
+    plot.plot_manhattan(posCum[idx],pv[idx][:,0],alphaNS=1.0,alphaS=1.0)
     PLT.savefig(out_file)
 
         

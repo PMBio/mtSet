@@ -206,7 +206,7 @@ class MultiTraitSetTest():
         # set params0 from null if params0==Null
         if params0 is None:
             if self.null is None:
-                if verbose:     ".. fitting null model upstream"
+                if verbose:     print ".. fitting null model upstream"
                 self.fitNull()
             if self.bgRE:
                 params0 = {'Cg':self.null['params0_g'],'Cn':self.null['params0_n']}
@@ -218,6 +218,7 @@ class MultiTraitSetTest():
         self.gp.set_Xr(Xr)
         self.gp.restart()
         start = TIME.time()
+
         for i in range(n_times):
             params0['Cr'] = 1e-3*SP.randn(self.rank_r*self.P)
             conv,info = OPT.opt_hyper(self.gp,params0)

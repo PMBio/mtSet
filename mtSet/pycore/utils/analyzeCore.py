@@ -25,7 +25,6 @@ def scan(bfile,Y,cov,null,wnds,minSnps,i0,i1,perm_i,resfile,F):
         NP.random.seed(perm_i)
         perm = NP.random.permutation(Y.shape[0])
 
-
     mtSet = MTST.MultiTraitSetTest(Y,S_XX=cov['eval'],U_XX=cov['evec'],F=F)
     mtSet.setNull(null)
     bim = plink_reader.readBIM(bfile,usecols=(0,1,2,3))
@@ -65,7 +64,7 @@ def analyze(options):
     F = None
     if options.ffile:
         F = readCovariatesFile(options.ffile)
-        null['params_mean'] = SP.loadtxt(options.nfile + '.f0')
+        #null['params_mean'] = SP.loadtxt(options.nfile + '.f0')
         
 
     if F is not None: assert Y.shape[0]==F.shape[0], 'dimensions mismatch'
