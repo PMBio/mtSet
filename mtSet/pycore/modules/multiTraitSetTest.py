@@ -74,22 +74,27 @@ class MultiTraitSetTest():
         self.U_XX = U_XX
         self.bgRE = self.XX is not None or noneNone
 
-    def _initMean(self,Y,F=None):
+    def _initMean(self,Y,F=None,tol=1e-6):
         """
         initialize the mean term
         Args:
             F:    sample design of the fixed effect
         """
+        if F is not None:
+            R = LA.qr(F,mode='r')[0][:F.shape[1],:]
+            I = (abs(R.diagonal())>tol)
+            if SP.any(~I):
+                warnings.warn('cols '+str(SP.where(~I)[0])+' have been removed because linearly dependent on the others')
+            self.F = F[:,I]
         #dimensions
         self.N,self.P = Y.shape
         #get F and Y
-        self.F=F
         self.Y=Y
         # build mean
         self.mean = mean(Y)
         if F is not None:
             A = SP.eye(self.P)
-            self.mean.addFixedEffect(F=F,A=A)
+            self.mean.addFixedEffect(F=self.F,A=A)
 
     def _initGP(self,colCovarType,rank_r,rank_g,rank_n):
         """
@@ -225,7 +230,6 @@ class MultiTraitSetTest():
         self.gp.set_Xr(Xr)
         self.gp.restart()
         start = TIME.time()
-
         for i in range(n_times):
             if params_was_None:
                 params0['Cr'] = 1e-3*SP.randn(self.rank_r*self.P)
