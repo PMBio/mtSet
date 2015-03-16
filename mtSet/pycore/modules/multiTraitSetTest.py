@@ -209,7 +209,7 @@ class MultiTraitSetTest():
         """ set null model info """
         self.null = null
 
-    def optimize(self,Xr,params0=None,n_times=10,verbose=True,vmax=5,perturb=1e-3,factr=1e3):
+    def optimize(self,Xr,params0=None,n_times=10,verbose=True,vmax=5,perturb=1e-3,factr=1e7):
         """
         Optimize the model considering Xr
         """
@@ -373,7 +373,7 @@ class MultiTraitSetTest():
                 f.close()
         return RV
 
-    def optimizeTraitByTrait(self,Xr,verbose=True,n_times=10,factr=1e3):
+    def optimizeTraitByTrait(self,Xr,verbose=True,n_times=10,factr=1e7):
         """ Optimize trait by trait """
         assert self.nullST is not None, 'fit null model beforehand'
         if self.mtssST is None:
