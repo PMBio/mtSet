@@ -20,6 +20,8 @@ from mtSet.pycore.utils.splitter_bed import splitGeno
 import mtSet.pycore.external.limix.plink_reader as plink_reader
 import scipy as SP
 import warnings
+import mtSet.pycore.external.limix.plink_reader as plink_reader
+import scipy.sparse.linalg as SSL
 
 def computeCovarianceMatrixPlink(plink_path,out_dir,bfile,cfile,sim_type='RRM'):
     """
@@ -54,7 +56,43 @@ def computeCovarianceMatrixPlink(plink_path,out_dir,bfile,cfile,sim_type='RRM'):
         old_fn = os.path.join(out_dir, 'plink.mibs.id')
         os.rename(old_fn,cfile+'.cov.id')
 
+def computePCsPlink(plink_path,k,out_dir,bfile,ffile):
+    """
+    computing the covariance matrix via plink
+    """
+    
+    print "Using plink to compute principal components"
+    cmd = '%s --bfile %s --pca %d '%(plink_path,bfile,k)
+    cmd+= '--out %s'%(os.path.join(out_dir,'plink'))
+    subprocess.call(cmd,shell=True)
+    plink_fn = os.path.join(out_dir, 'plink.eigenvec')
+    M = SP.loadtxt(plink_fn,dtype=str)
+    SP.savetxt(ffile,SP.array(M[:,2:],dtype=float))
 
+
+
+def computePCsPython(out_dir,k,bfile,ffile):
+    """ reading in """
+    RV = plink_reader.readBED(bfile,useMAFencoding=True)
+    X  = RV['snps']
+
+    """ standardizing markers """
+    X -= X.mean(axis=0)
+    X /= X.std(axis=0)
+
+    hasNan = SP.any(SP.isnan(X),axis=0)
+    print '%d SNPs have a nan entry. Exluding them for computing the covariance matrix.'%hasNan.sum()
+    X  = X[:,~hasNan]
+
+    
+    """ computing prinicipal components """
+    U,S,Vt = SSL.svds(X,k=k)
+
+    """ saving to output """
+    NP.savetxt(ffile, U, delimiter='\t',fmt='%.6f')    
+    
+    
+    
 def computeCovarianceMatrixPython(out_dir,bfile,cfile,sim_type='RRM'):
     print "Using python to create covariance matrix. This might be slow. We recommend using plink instead."
 
@@ -96,7 +134,7 @@ def computeCovarianceMatrixPython(out_dir,bfile,cfile,sim_type='RRM'):
 
 
 
-def computeTopPrincipalComponents(k,cfile,ffile):
+def computePCs(plink_path,k,bfile,cfile,ffile):
     """
     compute the first k principal components
 
@@ -109,7 +147,31 @@ def computeTopPrincipalComponents(k,cfile,ffile):
                          the individuals to cfile.cov.id in the current folder.
     sim_type     :   {IBS/RRM} are supported
     """
+    try:
+        output    = subprocess.check_output('%s --version --noweb'%plink_path,shell=True)
+        use_plink = float(output.split(' ')[1][1:-3])>=1.9
+    except:
+        use_plink = False
 
+
+    assert bfile!=None, 'Path to bed-file is missing.'
+    assert os.path.exists(bfile+'.bed'), '%s.bed is missing.'%bfile
+    assert os.path.exists(bfile+'.bim'), '%s.bim is missing.'%bfile
+    assert os.path.exists(bfile+'.fam'), '%s.fam is missing.'%bfile
+
+    # create dir if it does not exist
+    out_dir = os.path.split(cfile)[0]
+    if out_dir!='' and (not os.path.exists(out_dir)):
+        os.makedirs(out_dir)
+
+    if use_plink:
+        computePCsPlink(plink_path,k,out_dir,bfile,ffile)
+    else:
+        computePCsPython(out_dir,k,bfile,ffile)
+        
+def eighCovarianceMatrix(cfile):
+    
+    pdb.set_trace()
     S = NP.loadtxt(cfile+'.cov.eval') #S
     U = NP.loadtxt(cfile+'.cov.evec') #U
     pcs = U[:,:k]
@@ -192,6 +254,8 @@ def fit_null(Y,S_XX,U_XX,nfile,F):
     
 
 def preprocess(options):
+
+    assert options.bfile!=None, 'Please specify a bfile.'
     
     """ computing the covariance matrix """
     if options.compute_cov:
@@ -212,14 +276,13 @@ def preprocess(options):
     if options.compute_PCs>0:
        assert options.ffile is not None, 'Specify fix effects basename for saving PCs'
        t0 = time.time()
-       computeTopPrincipalComponents(options.compute_PCs,options.cfile,options.ffile)
+       computePCs(options.plink_path,options.compute_PCs,options.bfile,options.cfile,options.ffile)
        t1 = time.time()
        print '... finished in %s seconds'%(t1-t0)
        
 
     """ fitting the null model """
     if options.fit_null:
-        assert options.bfile!=None, 'Please specify a bfile.'
         if options.nfile is None:
             options.nfile = os.path.split(options.bfile)[-1]
             warnings.warn('nfile not specifed, set to %s'%options.nfile)
@@ -246,7 +309,6 @@ def preprocess(options):
 
     """ precomputing the windows """
     if options.precompute_windows:
-        assert options.bfile!=None, 'Please specify a bfile.'
         if options.wfile==None:
             options.wfile = os.path.split(options.bfile)[-1] + '.%d'%options.window_size
             warnings.warn('wfile not specifed, set to %s'%options.wfile)
