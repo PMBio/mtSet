@@ -67,7 +67,10 @@ def computePCsPlink(plink_path,k,out_dir,bfile,ffile):
     subprocess.call(cmd,shell=True)
     plink_fn = os.path.join(out_dir, 'plink.eigenvec')
     M = SP.loadtxt(plink_fn,dtype=str)
-    SP.savetxt(ffile,SP.array(M[:,2:],dtype=float))
+    U = SP.array(M[:,2:],dtype=float)
+    U-= U.mean(0)
+    U/= U.std(0)
+    SP.savetxt(ffile,U)
 
 
 
@@ -76,10 +79,15 @@ def computePCsPython(out_dir,k,bfile,ffile):
     RV = plink_reader.readBED(bfile,useMAFencoding=True)
     X  = RV['snps']
 
-    """ standardizing markers """
-    X -= X.mean(axis=0)
-    X /= X.std(axis=0)
+    """ normalizing markers """
+    print 'Normalizing SNPs...'
+    p_ref = X.mean(axis=0)/2.
+    X -= 2*p_ref
 
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        X /= SP.sqrt(2*p_ref*(1-p_ref))
+        
     hasNan = SP.any(SP.isnan(X),axis=0)
     print '%d SNPs have a nan entry. Exluding them for computing the covariance matrix.'%hasNan.sum()
     X  = X[:,~hasNan]
@@ -87,7 +95,10 @@ def computePCsPython(out_dir,k,bfile,ffile):
     
     """ computing prinicipal components """
     U,S,Vt = SSL.svds(X,k=k)
-
+    U -= U.mean(0)
+    U /= U.std(0)
+    U  = U[:,::-1]
+ 
     """ saving to output """
     NP.savetxt(ffile, U, delimiter='\t',fmt='%.6f')    
     
