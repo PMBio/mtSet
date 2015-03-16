@@ -134,7 +134,7 @@ def computeCovarianceMatrixPython(out_dir,bfile,cfile,sim_type='RRM'):
 
 
 
-def computePCs(plink_path,k,bfile,cfile,ffile):
+def computePCs(plink_path,k,bfile,ffile):
     """
     compute the first k principal components
 
@@ -142,10 +142,7 @@ def computePCs(plink_path,k,bfile,cfile,ffile):
     k            :   number of principal components
     plink_path   :   plink path
     bfile        :   binary bed file (bfile.bed, bfile.bim and bfile.fam are required)
-    cfile        :   the covariance matrix will be written to cfile.cov and the corresponding identifiers
-                         to cfile.cov.id. If not specified, the covariance matrix will be written to cfile.cov and
-                         the individuals to cfile.cov.id in the current folder.
-    sim_type     :   {IBS/RRM} are supported
+    ffile        :   name of output file
     """
     try:
         output    = subprocess.check_output('%s --version --noweb'%plink_path,shell=True)
@@ -160,7 +157,7 @@ def computePCs(plink_path,k,bfile,cfile,ffile):
     assert os.path.exists(bfile+'.fam'), '%s.fam is missing.'%bfile
 
     # create dir if it does not exist
-    out_dir = os.path.split(cfile)[0]
+    out_dir = os.path.split(ffile)[0]
     if out_dir!='' and (not os.path.exists(out_dir)):
         os.makedirs(out_dir)
 
@@ -276,7 +273,7 @@ def preprocess(options):
     if options.compute_PCs>0:
        assert options.ffile is not None, 'Specify fix effects basename for saving PCs'
        t0 = time.time()
-       computePCs(options.plink_path,options.compute_PCs,options.bfile,options.cfile,options.ffile)
+       computePCs(options.plink_path,options.compute_PCs,options.bfile,options.ffile)
        t1 = time.time()
        print '... finished in %s seconds'%(t1-t0)
        
