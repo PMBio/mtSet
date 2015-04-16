@@ -41,6 +41,15 @@ def scan(bfile,Y,cov,null,wnds,minSnps,i0,i1,perm_i,resfile,F):
         RV = plink_reader.readBED(bfile, useMAFencoding=True, blocksize = 1, start = int(wnds[wnd_i,4]), nSNPs = int(wnds[wnd_i,5]), order  = 'F',standardizeSNPs=False,ipos = 2,bim=bim,fam=fam)
         
         Xr = RV['snps']
+        
+        Inan = SP.isnan(Xr)
+        if Inan.sum()>0:
+            # impute nan
+            meanXr = SP.nanmean(Xr,0)
+            for s in range(Xr.shape[1]):
+                Xr[Inan[:,s],s] = meanXr[s]
+
+        # mean impute
         if perm_i is not None:
             Xr = Xr[perm,:]
         rv = mtSet.optimize(Xr)
