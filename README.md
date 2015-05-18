@@ -1,10 +1,11 @@
 mtSet
 ======
+Note: This is standalone version of mtSet, which was used to produce all the results as shown in the manuscript. For applied use, we recommend the implementation of mtSet provided within the LIMIX software suite (http://pypi.python.org/pypi/limix), which will be supported and regularly updated.
 
 Set tests are a powerful approach for genome-wide association testing between groups of genetic variants and individual quantitative traits.
 mtSet is an implementation of efficient set test algorithms for joint analysis across multiple traits. mtSet can account for confounding factors such as relatedness and can be used for analysis of single and multiple traits.
 
-The implementation is in Python and builds on the Gaussian process toolbox in pygp (https://github.com/PMBio/pygp) and the linear mixed model library LIMIX (https://pypi.python.org/pypi/limix).
+The implementation is in Python and builds on the Gaussian process toolbox in pygp (https://github.com/PMBio/pygp).
 
 By Francesco Paolo Casale (casale@ebi.ac.uk), Barbara Rakitsch (rakitsch@ebi.ac.uk) and Oliver Stegle (stegle@ebi.ac.uk)
 
