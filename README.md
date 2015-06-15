@@ -1,6 +1,6 @@
 mtSet
 ======
-Note: This is standalone version of mtSet, which was used to produce all the results as shown in the manuscript. For applied use, we recommend the implementation of mtSet provided within the LIMIX software suite (http://pypi.python.org/pypi/limix), which will be supported and regularly updated.
+Note: This is standalone version of mtSet, which was used to produce all the results as shown in the manuscript. mtSet will be available in LIMIX software suite (http://pypi.python.org/pypi/limix) within the next few days.
 
 Set tests are a powerful approach for genome-wide association testing between groups of genetic variants and individual quantitative traits.
 mtSet is an implementation of efficient set test algorithms for joint analysis across multiple traits. mtSet can account for confounding factors such as relatedness and can be used for analysis of single and multiple traits.
